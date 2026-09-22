@@ -1,0 +1,3 @@
+lol-social-chat-room[type='postGame'].blc-messages-unlocked:not(.blc-collapsed) .chat-placeholder-text {
+  display: none !important;
+}

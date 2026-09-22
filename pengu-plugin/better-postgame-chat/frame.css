@@ -1,0 +1,19 @@
+.message-box:has(.system-message) {
+  display: none !important;
+}
+
+.message-box.my-team .message-name,
+.message-box.my-team .message,
+.message-box.mine .message-name,
+.message-box.mine .message {
+  color: #00e5ff !important;
+}
+
+.message-box.other-team .message-name,
+.message-box.other-team .message {
+  color: #ff3b3b !important;
+}
+
+.message-name {
+  font-weight: 700 !important;
+}
