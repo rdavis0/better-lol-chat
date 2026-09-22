@@ -6,7 +6,7 @@ Unofficial Pengu Loader plugin that improves League of Legends **post-game chat*
 
 Living checklist (shipped + planned): [`docs/FEATURE_LIST.md`](docs/FEATURE_LIST.md)
 
-Planned next (not built yet): toggle **champion names ↔ player names**.
+Planned client and companion work, including emoji input in the standalone app only, is in the feature list.
 
 ## Install
 

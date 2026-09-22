@@ -2,6 +2,7 @@ import './style.css';
 import frameCss from './frame.css?raw';
 
 const LOG = '[better-postgame-chat]';
+const CREDIT_TEXT = 'better-lol-chat by wryguy';
 const JOIN_TEXT = /joined(\s+the)?\s+(room|lobby)/i;
 const POSTGAME_PHASES = new Set([
   'WaitingForStats',
@@ -532,6 +533,7 @@ function enhance() {
     const doc = getFrameDocument(room);
     if (doc) {
       injectFrameStyles(doc);
+      insertCredit(doc);
       rewriteNames(doc);
     }
   } catch (err) {
@@ -586,6 +588,7 @@ function hookMessageFrame(room) {
     });
     frameObservers.set(doc, mo);
     injectFrameStyles(doc);
+    insertCredit(doc);
   };
 
   iframe.addEventListener('load', attach);
@@ -596,6 +599,22 @@ function hookMessageFrame(room) {
     const doc = getFrameDocument(room);
     if ((doc && frameObservers.has(doc)) || ++tries > 40) clearInterval(poll);
   }, 250);
+}
+
+function insertCredit(doc) {
+  const box = doc.querySelector('.message-box');
+  const host = box?.parentElement || doc.body;
+  if (!host) return;
+  let el = doc.getElementById('blc-credit');
+  if (!el) {
+    el = doc.createElement('div');
+    el.id = 'blc-credit';
+    el.className = 'blc-credit';
+    el.textContent = CREDIT_TEXT;
+  }
+  if (el.parentElement !== host || host.firstElementChild !== el) {
+    host.insertBefore(el, host.firstChild);
+  }
 }
 
 function injectFrameStyles(doc) {

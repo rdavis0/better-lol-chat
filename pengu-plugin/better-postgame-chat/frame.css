@@ -17,3 +17,16 @@
 .message-name {
   font-weight: 700 !important;
 }
+
+.blc-credit {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin-bottom: 4px;
+  padding: 4px 0px;
+  color: #ffd700 !important;
+  font-weight: 700 !important;
+  background: #120848d9;
+  width: 100%;
+  text-align: center;
+}
