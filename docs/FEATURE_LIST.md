@@ -10,11 +10,13 @@ Status tracks implementation.
 ## Shipped (Pengu prototype)
 
 - [x] Replace Riot IDs with champion names in post-game chat
-- [x] Color messages by team (ally/self cyan, enemy red)
-- [x] Hide “joined the lobby” / system join rows
+- [x] Color messages by team (allies cyan, enemies red, you gold)
+- [x] Hide “joined the lobby” rows
+- [x] Keep “left the lobby” rows, with the champion name colored by team and the rest of the line gray
 - [x] Keep chat open on click-outside / blur (vs vanilla collapse)
 - [x] Repurpose `.chat-toggle-button` to collapse/expand the full chat window
 - [x] Local gold credit line when post-game chat loads: `better-lol-chat by wryguy`
+- [x] Champion icons in the scoreboard gap between items and the KDA column
 
 ## Planned — client (Pengu)
 
@@ -29,10 +31,21 @@ Status tracks implementation.
 - [ ] Champion icons next to names
 - [ ] Optional timestamps on messages
 - [ ] Message spacing / readability polish
-- [ ] Hide or simplify leave-room rows the same way joins are hidden
 - [ ] More robust identity mapping if eog/PUUID fields change
 
 The client plugin stays useful on its own. Do not paywall champion names, team colors, or basic readability.
+
+### Arena
+The chat row only has `mine`, `my-team`, and `other-team`. Every opponent shares `other-team`, so Arena teams are not distinguishable from the message class. Team id has to come from the end-of-game `teams[]` block.
+
+- [ ] **Multi-team color coding**
+  Give each Arena team its own name color. Your duo stays the ally color. The other duos do not all stay red.
+- [ ] **Scoreboard team highlight**
+  Mark each team on the Arena scoreboard with that same color.
+
+### Same champion
+- [ ] **Champion ditto**
+  When one champion appears more than once (One for All, Arena duplicates, blind-pick mirrors), keep players mapped by puuid and summoner id. Disambiguate the chat label so two copies are not shown as the same person. Scoreboard icons must follow the player, not the champion name alone.
 
 ## Planned — companion app
 

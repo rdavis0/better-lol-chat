@@ -1,3 +1,41 @@
 lol-social-chat-room[type='postGame'].blc-messages-unlocked:not(.blc-collapsed) .chat-placeholder-text {
   display: none !important;
 }
+
+lol-social-chat-room[type='postGame'].blc-stretched:not(.blc-collapsed) {
+  position: absolute !important;
+  top: var(--blc-chat-top) !important;
+  left: var(--blc-chat-left) !important;
+  width: var(--blc-chat-w) !important;
+  height: var(--blc-chat-h) !important;
+  max-height: none !important;
+  bottom: auto !important;
+  z-index: 20;
+}
+
+lol-social-chat-room[type='postGame'].blc-stretched:not(.blc-collapsed) .chat-box {
+  height: 100% !important;
+  max-height: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+}
+
+lol-social-chat-room[type='postGame'].blc-stretched:not(.blc-collapsed) iframe#embedded-messages-frame {
+  flex: 1 1 auto !important;
+  height: var(--blc-frame-h) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+lol-social-chat-room[type='postGame'].blc-stretched:not(.blc-collapsed) lol-social-chat-input {
+  flex: 0 0 auto !important;
+}
+
+.blc-row-champ {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  object-fit: cover;
+  border-radius: 2px;
+}

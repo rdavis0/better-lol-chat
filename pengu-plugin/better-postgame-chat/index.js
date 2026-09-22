@@ -22,11 +22,15 @@ let windowCollapsed = false;
 let applying = false;
 let chatRoom = null;
 let focusClassObserver = null;
+let chatBottomViewport = 0;
+let onScoreboard = false;
+let wasOnScoreboard = false;
 const frameObservers = new WeakMap();
 
 const byPuuid = new Map();
 const bySummonerId = new Map();
 let nameIndex = [];
+let roster = [];
 
 export function init(context) {
   socket = context.socket;
@@ -87,6 +91,11 @@ export function load() {
   setInterval(() => {
     if (inPostGame) ensureOpen();
   }, 250);
+
+  window.addEventListener('resize', () => {
+    clearStretch(chatRoom);
+    if (inPostGame) scheduleEnsureOpen(0);
+  });
 }
 
 function onPhase(phase) {
@@ -95,10 +104,15 @@ function onPhase(phase) {
   inPostGame = next;
   if (!inPostGame) {
     windowCollapsed = false;
+    clearStretch(chatRoom);
     chatRoom = null;
+    onScoreboard = false;
+    wasOnScoreboard = false;
     byPuuid.clear();
     bySummonerId.clear();
     nameIndex = [];
+    roster = [];
+    clearScoreboardIcons();
     return;
   }
   windowCollapsed = false;
@@ -134,11 +148,16 @@ async function refreshIdentities() {
   ]);
 
   const champNames = new Map();
+  const champIcons = new Map();
   for (const c of champs || []) {
-    if (c && c.id != null) champNames.set(Number(c.id), c.name || c.alias);
+    if (!c || c.id == null) continue;
+    const id = Number(c.id);
+    champNames.set(id, c.name || c.alias);
+    if (c.squarePortraitPath) champIcons.set(id, c.squarePortraitPath);
   }
 
-  const players = collectPlayers(eog, me, champNames);
+  const players = collectPlayers(eog, me, champNames, champIcons);
+  roster = players;
   byPuuid.clear();
   bySummonerId.clear();
   const aliases = [];
@@ -168,7 +187,7 @@ async function refreshIdentities() {
   console.log(LOG, 'mapped', players.length, 'players', { conversation: postGameConversationId });
 }
 
-function collectPlayers(eog, me, champNames) {
+function collectPlayers(eog, me, champNames, champIcons) {
   if (!eog) return [];
   const myPuuid = me?.puuid;
   const mySummonerId = me?.summonerId;
@@ -176,11 +195,15 @@ function collectPlayers(eog, me, champNames) {
 
   const push = (raw, allyHint, teamId) => {
     if (!raw) return;
+    const championId = Number(raw.championId);
     const championName =
-      champNames.get(Number(raw.championId)) ||
+      champNames.get(championId) ||
       raw.championName ||
       (raw.skinName ? String(raw.skinName) : null) ||
       'Unknown';
+    const iconPath =
+      champIcons.get(championId) ||
+      (championId ? `/lol-game-data/assets/v1/champion-icons/${championId}.png` : '');
     const aliases = unique([
       raw.riotIdGameName && raw.riotIdTagLine
         ? `${raw.riotIdGameName}#${raw.riotIdTagLine}`
@@ -197,6 +220,7 @@ function collectPlayers(eog, me, champNames) {
       summonerId: raw.summonerId ?? raw.userId ?? null,
       teamId: teamId ?? raw.teamId ?? null,
       championName,
+      iconPath,
       ally: allyHint,
       aliases,
     });
@@ -337,7 +361,7 @@ function watchFocusClass(room) {
   }
   const targets = [room, getChatBox(room)].filter(Boolean);
   focusClassObserver = new MutationObserver(() => {
-    if (!inPostGame) return;
+    if (!inPostGame || !onScoreboard) return;
     if (windowCollapsed) {
       if (isChatOpen(room)) withFrozenScroll(() => clearFocusedClass(room));
       return;
@@ -361,21 +385,44 @@ function scheduleEnsureOpen(delay = 0) {
 function ensureOpen() {
   if (!inPostGame) return;
   const room = findPostGameRoom();
-  if (!room) return;
+  if (!room) {
+    onScoreboard = scoreboardIsShowing();
+    if (onScoreboard) placeScoreboardIcons();
+    else clearScoreboardIcons();
+    return;
+  }
   chatRoom = room;
+  onScoreboard = scoreboardIsShowing();
+  if (wasOnScoreboard && !onScoreboard) {
+    clearStretch(room);
+    withFrozenScroll(() => clearFocusedClass(room));
+  }
+  wasOnScoreboard = onScoreboard;
   watchFocusClass(room);
   ensurePlayerMessagesVisible(room);
 
+  if (!onScoreboard) {
+    syncCredit(room);
+    clearScoreboardIcons();
+    return;
+  }
+
   if (windowCollapsed) {
+    clearStretch(room);
     room.classList.add(COLLAPSED_CLASS);
     updateCollapsePlaceholder(room, true);
     withFrozenScroll(() => clearFocusedClass(room));
+    syncCredit(room);
+    placeScoreboardIcons();
     return;
   }
 
   room.classList.remove(COLLAPSED_CLASS);
   updateCollapsePlaceholder(room, false);
   withFrozenScroll(() => forceFocusedClass(room));
+  stretchChat(room);
+  syncCredit(room);
+  placeScoreboardIcons();
 }
 
 function ensurePlayerMessagesVisible(room) {
@@ -407,9 +454,177 @@ function updateCollapsePlaceholder(room, collapsed) {
   }
 }
 
+const ROW_SEL =
+  '.scoreboard-row-component, .strawberry-scoreboard-row-component, .jade-scoreboard-row-component';
+const ITEMS_SEL =
+  '.scoreboard-row-items-container, .strawberry-scoreboard-row-items-container, .jade-scoreboard-row-items-container';
+const STAT_SEL = '.scoreboard-row-stat-display-component';
+const ROW_NAME_SEL =
+  '.scoreboard-row-player-name, .strawberry-scoreboard-row-player-name, .jade-scoreboard-row-player-name';
+const ROW_CHAMP_SEL =
+  '.scoreboard-row-champ-name, .strawberry-scoreboard-row-champ-name, .jade-scoreboard-row-champ-name';
+
+function clearScoreboardIcons() {
+  document.querySelectorAll('.blc-row-champ').forEach((el) => el.remove());
+}
+
+function playerForRow(row) {
+  const name = stripBidi(row.querySelector(ROW_NAME_SEL)?.textContent || '').trim();
+  const byName = name && matchAlias(name);
+  if (byName?.player?.iconPath) return byName.player;
+  const champ = stripBidi(row.querySelector(ROW_CHAMP_SEL)?.textContent || '')
+    .trim()
+    .toLowerCase();
+  if (!champ) return null;
+  return roster.find((p) => p.championName && p.championName.toLowerCase() === champ && p.iconPath) || null;
+}
+
+function statAfterItems(row, anchorRight) {
+  let best = null;
+  let bestLeft = Infinity;
+  for (const stat of row.querySelectorAll(STAT_SEL)) {
+    const left = stat.getBoundingClientRect().left;
+    if (left + 1 < anchorRight) continue;
+    if (left < bestLeft) {
+      bestLeft = left;
+      best = stat;
+    }
+  }
+  return best;
+}
+
+function champIconSize() {
+  const icon = document.querySelector(
+    '.postgame-player-keystone-icon.circle-icon-holder:not(.is-sub-style)',
+  );
+  const rect = icon?.getBoundingClientRect();
+  const measured = rect ? Math.round(Math.min(rect.width, rect.height)) : 0;
+  return measured >= 16 ? measured : 30;
+}
+
+function placeScoreboardIcons() {
+  if (!onScoreboard || !roster.length) {
+    clearScoreboardIcons();
+    return;
+  }
+  const size = champIconSize();
+  const seen = new Set();
+  for (const row of document.querySelectorAll(ROW_SEL)) {
+    const items = row.querySelector(ITEMS_SEL);
+    if (!items) continue;
+    const rowRect = row.getBoundingClientRect();
+    if (rowRect.width < 1 || rowRect.height < 1) continue;
+    const itemsRect = items.getBoundingClientRect();
+    const lastItem = items.querySelector('.postgame-player-item:last-of-type');
+    const anchorRight = (lastItem || items).getBoundingClientRect().right;
+    const stat =
+      row.querySelector('.scoreboard-row-stat-display-component.INDIVIDUAL_KDA') ||
+      statAfterItems(row, anchorRight);
+    if (!stat) continue;
+    const statRect = stat.getBoundingClientRect();
+    const gap = statRect.left - anchorRight;
+    let img = row.querySelector(':scope > .blc-row-champ');
+    const player = playerForRow(row);
+    if (!player?.iconPath) {
+      img?.remove();
+      continue;
+    }
+    if (getComputedStyle(row).position === 'static') row.style.position = 'relative';
+    if (!img) {
+      img = document.createElement('img');
+      img.className = 'blc-row-champ';
+      img.alt = '';
+      row.appendChild(img);
+    }
+    if (img.getAttribute('src') !== player.iconPath) img.src = player.iconPath;
+    const centerX = anchorRight + gap / 2;
+    const centerY = (itemsRect.top + itemsRect.bottom + statRect.top + statRect.bottom) / 4;
+    img.style.left = `${Math.round(centerX - rowRect.left - size / 2)}px`;
+    img.style.top = `${Math.round(centerY - rowRect.top - size / 2)}px`;
+    img.style.width = `${size}px`;
+    img.style.height = `${size}px`;
+    seen.add(img);
+  }
+  document.querySelectorAll('.blc-row-champ').forEach((el) => {
+    if (!seen.has(el)) el.remove();
+  });
+}
+
+function scoreboardIsShowing() {
+  const team = firstTeamContainer();
+  if (!team) return false;
+  const rect = team.getBoundingClientRect();
+  const viewW = window.innerWidth || document.documentElement.clientWidth;
+  const viewH = window.innerHeight || document.documentElement.clientHeight;
+  if (rect.bottom < 0 || rect.right < 0 || rect.top > viewH || rect.left > viewW) return false;
+  const style = getComputedStyle(team);
+  if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+  return true;
+}
+
+function firstTeamContainer() {
+  const nodes = document.querySelectorAll('.scoreboard-team-container');
+  let best = null;
+  let bestTop = Infinity;
+  for (const el of nodes) {
+    const rect = el.getBoundingClientRect();
+    if (rect.height < 1 || rect.width < 1) continue;
+    if (rect.top < bestTop) {
+      bestTop = rect.top;
+      best = el;
+    }
+  }
+  return best;
+}
+
+function clearStretch(room) {
+  chatBottomViewport = 0;
+  if (!room) return;
+  room.classList.remove('blc-stretched');
+  for (const name of ['--blc-chat-h', '--blc-chat-top', '--blc-chat-left', '--blc-chat-w', '--blc-frame-h']) {
+    room.style.removeProperty(name);
+  }
+}
+
+function setVar(el, name, value) {
+  if (el.style.getPropertyValue(name) !== value) el.style.setProperty(name, value);
+}
+
+function stretchChat(room) {
+  if (!room || windowCollapsed) return;
+  const team = firstTeamContainer();
+  if (!team) return;
+
+  const parent = room.offsetParent instanceof Element ? room.offsetParent : room.parentElement;
+  if (!parent) return;
+  const parentRect = parent.getBoundingClientRect();
+
+  if (!room.classList.contains('blc-stretched') || !chatBottomViewport) {
+    const rect = room.getBoundingClientRect();
+    if (rect.height < 1 || rect.width < 1) return;
+    chatBottomViewport = rect.bottom;
+    setVar(room, '--blc-chat-left', `${Math.round(rect.left - parentRect.left)}px`);
+    setVar(room, '--blc-chat-w', `${Math.round(rect.width)}px`);
+  }
+
+  const teamTop = team.getBoundingClientRect().top;
+  const height = Math.round(chatBottomViewport - teamTop);
+  if (height < 48) return;
+
+  const input = room.querySelector('lol-social-chat-input');
+  const inputH = Math.round(input?.getBoundingClientRect().height || 0);
+  setVar(room, '--blc-chat-top', `${Math.round(teamTop - parentRect.top)}px`);
+  setVar(room, '--blc-chat-h', `${height}px`);
+  setVar(room, '--blc-frame-h', `${Math.max(48, height - inputH)}px`);
+  if (!room.classList.contains('blc-stretched')) {
+    withFrozenScroll(() => room.classList.add('blc-stretched'));
+  }
+}
+
 function collapseWindow(room = findPostGameRoom()) {
   if (!room) return;
   windowCollapsed = true;
+  clearStretch(room);
   room.classList.add(COLLAPSED_CLASS);
   updateCollapsePlaceholder(room, true);
   withFrozenScroll(() => clearFocusedClass(room));
@@ -466,7 +681,7 @@ function onInputOpen(event) {
 }
 
 function onOutsidePointerDown(event) {
-  if (!inPostGame || windowCollapsed) return;
+  if (!inPostGame || !onScoreboard || windowCollapsed) return;
   const room = findPostGameRoom();
   if (!room) return;
   if (event.target?.closest?.(TOGGLE_SEL)) return;
@@ -475,7 +690,7 @@ function onOutsidePointerDown(event) {
 }
 
 function onOutsidePointerUp(event) {
-  if (!inPostGame || windowCollapsed) return;
+  if (!inPostGame || !onScoreboard || windowCollapsed) return;
   const room = findPostGameRoom();
   if (!room) return;
   if (event.target?.closest?.(TOGGLE_SEL)) return;
@@ -491,7 +706,7 @@ function onOutsidePointerUp(event) {
 }
 
 function onFocusOut(event) {
-  if (!inPostGame || windowCollapsed) return;
+  if (!inPostGame || !onScoreboard || windowCollapsed) return;
   const room = findPostGameRoom();
   if (!room) return;
   const leaving = event.target;
@@ -535,6 +750,8 @@ function enhance() {
       injectFrameStyles(doc);
       insertCredit(doc);
       rewriteNames(doc);
+      rewriteLobbyMessages(doc);
+      syncCredit(room);
     }
   } catch (err) {
     console.warn(LOG, err);
@@ -601,9 +818,19 @@ function hookMessageFrame(room) {
   }, 250);
 }
 
+function scrollParent(el) {
+  let node = el?.parentElement;
+  const doc = el?.ownerDocument;
+  while (node && node !== doc?.documentElement) {
+    const style = doc.defaultView?.getComputedStyle(node);
+    if (style && /(auto|scroll)/.test(style.overflowY)) return node;
+    node = node.parentElement;
+  }
+  return doc?.scrollingElement || doc?.body || null;
+}
+
 function insertCredit(doc) {
-  const box = doc.querySelector('.message-box');
-  const host = box?.parentElement || doc.body;
+  const host = doc.documentElement || doc.body;
   if (!host) return;
   let el = doc.getElementById('blc-credit');
   if (!el) {
@@ -612,9 +839,40 @@ function insertCredit(doc) {
     el.className = 'blc-credit';
     el.textContent = CREDIT_TEXT;
   }
-  if (el.parentElement !== host || host.firstElementChild !== el) {
-    host.insertBefore(el, host.firstChild);
+  if (el.parentElement !== host) host.appendChild(el);
+  applyCreditFont(doc, el);
+  syncCredit(chatRoom);
+
+  const box = doc.querySelector('.message-box');
+  const scroller = scrollParent(box || el);
+  if (!scroller || scroller === el) return;
+  const barH = el.offsetHeight || 22;
+  if (!scroller.dataset.blcCreditPad) {
+    const base = parseFloat(doc.defaultView?.getComputedStyle(scroller).paddingTop) || 0;
+    scroller.dataset.blcCreditPad = String(base);
   }
+  const pad = `${(parseFloat(scroller.dataset.blcCreditPad) || 0) + barH}px`;
+  if (scroller.style.paddingTop !== pad) scroller.style.paddingTop = pad;
+}
+
+function applyCreditFont(doc, el) {
+  const sample = doc.querySelector('.chat-message .message, .chat-message, .system-message, .message-name');
+  if (!sample) return;
+  const cs = doc.defaultView?.getComputedStyle(sample);
+  if (!cs) return;
+  el.style.fontFamily = cs.fontFamily;
+  el.style.fontSize = cs.fontSize;
+  el.style.fontStyle = cs.fontStyle;
+  el.style.letterSpacing = cs.letterSpacing;
+  el.style.lineHeight = cs.lineHeight;
+}
+
+function syncCredit(room = chatRoom) {
+  const doc = room ? getFrameDocument(room) : null;
+  const el = doc?.getElementById('blc-credit');
+  if (!el) return;
+  const hidden = !room || windowCollapsed || !isChatOpen(room);
+  el.classList.toggle('blc-credit-hidden', hidden);
 }
 
 function injectFrameStyles(doc) {
@@ -635,6 +893,33 @@ function rewriteNames(root) {
     const match = matchAlias(text);
     if (!match) continue;
     el.textContent = match.player.championName;
+  }
+}
+
+const LEAVE_TEXT = /^(.*?)\s+(left(?:\s+the)?\s+(?:room|lobby))\s*$/i;
+
+function rewriteLobbyMessages(root) {
+  const spans = root.querySelectorAll?.('.system-message span') || [];
+  for (const span of spans) {
+    const box = span.closest('.message-box');
+    const text = stripBidi(span.textContent || '').replace(/\s+/g, ' ').trim();
+    if (JOIN_TEXT.test(text)) {
+      box?.classList.add('blc-hide-join');
+      continue;
+    }
+    const leave = text.match(LEAVE_TEXT);
+    if (!leave) continue;
+    box?.classList.remove('blc-hide-join');
+    const entry = matchAlias(leave[1].trim());
+    if (!entry) continue;
+    const champ = entry.player.championName;
+    const nameEl = span.querySelector('.blc-system-name');
+    if (nameEl?.textContent === champ) continue;
+    const doc = span.ownerDocument;
+    const name = doc.createElement('span');
+    name.className = 'blc-system-name';
+    name.textContent = champ;
+    span.replaceChildren(name, doc.createTextNode(` ${leave[2]}`));
   }
 }
 

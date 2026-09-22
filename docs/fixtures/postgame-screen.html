@@ -1,0 +1,723 @@
+<!--
+  Trimmed from a League client outerHTML export (patch 16.18, 2026-09-22).
+  Kept: scoreboard header, local player row, one ally row, one enemy row, post-game chat shell.
+  Removed: Ember comments, empty tooltips, the other seven rows, intro video, and the friend-chat window.
+  The messages iframe is empty here. Message rows live in that frame's document, not in this outerHTML.
+-->
+<div class="screen-root" data-screen-name="rcp-fe-lol-postgame" style="opacity: 1;">
+ <div class="ember-application-factory 2.12.2 rcp-fe-lol-postgame-ember ember-application">
+  <div>
+   <div class="postgame-application">
+    <div class="postgame-background-image" style="background-image: url(lol-game-data/assets/content/src/LeagueClient/GameModeAssets/Classic_SRU/img/gameflow-background-dark.jpg)">
+    </div>
+    <div class="postgame-root-component">
+     <div class="postgame-contents">
+      <div class="scoreboard-root-component">
+       <div class="scoreboard-root-content-container" style="opacity: 1;">
+        <div class="scoreboard-header-component is-player-team">
+         <div class="scoreboard-header-content">
+          <div class="scoreboard-header-team-name">
+           Team 1
+          </div>
+          <div class="scoreboard-header-separator-icon">
+          </div>
+          <div class="scoreboard-header-stat-container">
+           <div class="scoreboard-header-icon small kda">
+           </div>
+           <div class="scoreboard-header-stat-label">
+            23 / 19 / 19
+           </div>
+          </div>
+          <div class="scoreboard-header-separator-icon">
+          </div>
+          <div class="scoreboard-header-stat-container">
+           <div class="scoreboard-header-icon small gold">
+           </div>
+           <div class="scoreboard-header-stat-label">
+            63,311
+           </div>
+          </div>
+         </div>
+         <div class="scoreboard-header-spacer">
+         </div>
+         <div class="scoreboard-column-icons-container">
+          <div class="scoreboard-header-icon-spacer">
+           <div class="scoreboard-header-icon kda">
+           </div>
+          </div>
+          <div class="scoreboard-stat-switcher-component TOTAL_DAMAGE_DEALT_TO_CHAMPIONS">
+           <div class="scoreboard-stat-switcher-arrow left">
+           </div>
+           <div class="scoreboard-stat-switcher-icon">
+           </div>
+           <div class="scoreboard-stat-switcher-arrow right">
+           </div>
+          </div>
+          <div class="scoreboard-stat-switcher-component GOLD_EARNED">
+           <div class="scoreboard-stat-switcher-arrow left">
+           </div>
+           <div class="scoreboard-stat-switcher-icon">
+           </div>
+           <div class="scoreboard-stat-switcher-arrow right">
+           </div>
+          </div>
+          <div class="scoreboard-header-challenge-icon-container">
+           <div class="scoreboard-header-icon challenge-crystal">
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="scoreboard-team-container">
+         <div class="scoreboard-team">
+          <div class="scoreboard-row-separator top">
+          </div>
+          <div class="scoreboard-row-component is-local-player is-ally not-in-chat">
+           <div class="scoreboard-row-content-container centered-flex-box">
+            <div class="scoreboard-row-color-bar">
+            </div>
+            <div class="scoreboard-row-player-details-container">
+             <div class="scoreboard-row-skin-background" style="background-image: url(/lol-game-data/assets/ASSETS/Characters/Cassiopeia/Skins/Base/Images/cassiopeia_splash_centered_0.jpg)">
+             </div>
+             <div class="scoreboard-row-skin-overlay">
+             </div>
+             <div class="scoreboard-row-skin-overlay secondary">
+             </div>
+             <div class="scoreboard-row-details-content horizontal-flex-box">
+              <div class="scoreboard-row-position-level-container">
+               <div class="scoreboard-row-in-game-level centered-flex-box">
+                15
+               </div>
+              </div>
+              <div class="scoreboard-row-spacer">
+              </div>
+              <div class="scoreboard-row-name-and-champ-container vertical-flex-box">
+               <div class="scoreboard-row-player-name">
+                <span class="player-name-component">
+                 <span class="player-name__alias player-name__force-gamename-tagline-order" id="player-name-game-name-only-render-mode">
+                  <span class="player-name__game-name player-name__force-locale-text-direction">
+                   Chaotic Fiasco
+                  </span>
+                  ‎
+                 </span>
+                </span>
+               </div>
+               <div class="scoreboard-row-champ-name">
+                Cassiopeia
+               </div>
+              </div>
+              <div class="scoreboard-row-actions-button-container centered-flex-box">
+              </div>
+              <div class="scoreboard-row-mute-indicator" id="mute-indicator">
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-pike">
+            </div>
+            <div class="scoreboard-row-keystone-container centered-flex-box">
+             <div class="scoreboard-row-keystone-alignment-container">
+              <div class="postgame-player-keystone-icon circle-icon-holder">
+               <img class="postgame-player-keystone-icon-img" src="/lol-game-data/assets/v1/perk-images/Styles/Sorcery/DeathfireTouch/DEATHFIRE_TOUCH_KEYSTONE.png"/>
+              </div>
+              <div class="postgame-player-keystone-icon circle-icon-holder is-sub-style">
+               <img class="postgame-player-keystone-icon-img" src="/lol-game-data/assets/v1/perk-images/Styles/7201_Precision.png"/>
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-summoner-spells-container vertical-flex-box centered-flex-box">
+             <div class="scoreboard-spell-component is-small">
+              <div class="postgame-player-spell-icon-container">
+               <img class="postgame-player-spell-icon" src="/lol-game-data/assets/DATA/Spells/Icons2D/Summoner_flash.png"/>
+              </div>
+             </div>
+             <div class="scoreboard-spell-component is-small">
+              <div class="postgame-player-spell-icon-container">
+               <img class="postgame-player-spell-icon" src="/lol-game-data/assets/DATA/Spells/Icons2D/Summoner_Teleport_New.png"/>
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-items-container centered-flex-box">
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/6657_Mage_T4_RodOfAges.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3003_Mage_T3_ArchangelStaff.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3009_Class_T2_BootsofSwiftness.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3116_Mage_T3_RylajsCrystalScepter.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3147_HauntingGuise.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(undefined);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3340_Class_T1_WardingTotem.png);">
+             </div>
+             <div class="item-spacer">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(undefined);">
+             </div>
+            </div>
+            <div class="scoreboard-row-stat-display-component INDIVIDUAL_KDA">
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-primary">
+               8 / 3 / 3
+              </div>
+             </div>
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-secondary">
+               3.7 KDA
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-stat-display-component TOTAL_DAMAGE_DEALT_TO_CHAMPIONS">
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-primary">
+               24,051
+              </div>
+             </div>
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-graph-container">
+               <div class="scoreboard-row-stat-graph-fill css-animate is-local-player" style="transform: matrix(0.655966, 0, 0, 1, 0, 0); z-index: 0;">
+               </div>
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-stat-display-component GOLD_EARNED">
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-primary">
+               12,304
+              </div>
+             </div>
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-secondary">
+               756 / min
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-updated-challenge-component">
+             <img class="scoreboard-updated-challenge-icon" src="/fe/lol-static-assets/images/challenges-shared/icon_background.png"/>
+            </div>
+           </div>
+           <div class="scoreboard-row-hover-overlay">
+           </div>
+          </div>
+          <div class="scoreboard-row-separator top">
+          </div>
+          <div class="scoreboard-row-component is-ally not-in-chat">
+           <div class="scoreboard-row-content-container centered-flex-box">
+            <div class="scoreboard-row-color-bar">
+            </div>
+            <div class="scoreboard-row-player-details-container">
+             <div class="scoreboard-row-skin-background" style="background-image: url(/lol-game-data/assets/ASSETS/Characters/Kaisa/Skins/Base/Images/kaisa_splash_centered_0.jpg)">
+             </div>
+             <div class="scoreboard-row-skin-overlay">
+             </div>
+             <div class="scoreboard-row-skin-overlay secondary">
+             </div>
+             <div class="scoreboard-row-details-content horizontal-flex-box">
+              <div class="scoreboard-row-position-level-container">
+               <div class="scoreboard-row-in-game-level centered-flex-box">
+                14
+               </div>
+              </div>
+              <div class="scoreboard-row-spacer">
+              </div>
+              <div class="scoreboard-row-name-and-champ-container vertical-flex-box">
+               <div class="scoreboard-row-player-name">
+                <span class="player-name-component">
+                 <span class="player-name__alias player-name__force-gamename-tagline-order" id="player-name-game-name-only-render-mode">
+                  <span class="player-name__game-name player-name__force-locale-text-direction">
+                   akichan
+                  </span>
+                  ‎
+                 </span>
+                </span>
+               </div>
+               <div class="scoreboard-row-champ-name">
+                Kai'Sa
+               </div>
+              </div>
+              <div class="scoreboard-row-actions-button-container centered-flex-box">
+               <div class="scoreboard-row-actions-button">
+               </div>
+              </div>
+              <div class="scoreboard-row-mute-indicator" id="mute-indicator">
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-pike">
+            </div>
+            <div class="scoreboard-row-keystone-container centered-flex-box">
+             <div class="scoreboard-row-keystone-alignment-container">
+              <div class="postgame-player-keystone-icon circle-icon-holder">
+               <img class="postgame-player-keystone-icon-img" src="/lol-game-data/assets/v1/perk-images/Styles/Precision/LethalTempo/LethalTempoTemp.png"/>
+              </div>
+              <div class="postgame-player-keystone-icon circle-icon-holder is-sub-style">
+               <img class="postgame-player-keystone-icon-img" src="/lol-game-data/assets/v1/perk-images/Styles/7203_Whimsy.png"/>
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-summoner-spells-container vertical-flex-box centered-flex-box">
+             <div class="scoreboard-spell-component is-small">
+              <div class="postgame-player-spell-icon-container">
+               <img class="postgame-player-spell-icon" src="/lol-game-data/assets/DATA/Spells/Icons2D/Summoner_haste.png"/>
+              </div>
+             </div>
+             <div class="scoreboard-spell-component is-small">
+              <div class="postgame-player-spell-icon-container">
+               <img class="postgame-player-spell-icon" src="/lol-game-data/assets/DATA/Spells/Icons2D/Summoner_heal.png"/>
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-items-container centered-flex-box">
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/2010_Class_T1_TotalBiscuitofEverlastingWill.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/6672_Marksman_T4_BehemothSlayer.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3087_Statikk_Shiv.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3006_Class_T2_BerserkersGreaves.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/2510_APFighterSheen.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(undefined);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3340_Class_T1_WardingTotem.png);">
+             </div>
+             <div class="item-spacer">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(undefined);">
+             </div>
+            </div>
+            <div class="scoreboard-row-stat-display-component INDIVIDUAL_KDA">
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-primary">
+               0 / 6 / 4
+              </div>
+             </div>
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-secondary">
+               0.7 KDA
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-stat-display-component TOTAL_DAMAGE_DEALT_TO_CHAMPIONS">
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-primary">
+               8,174
+              </div>
+             </div>
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-graph-container">
+               <div class="scoreboard-row-stat-graph-fill css-animate" style="transform: matrix(0.222937, 0, 0, 1, 0, 0); z-index: 0;">
+               </div>
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-stat-display-component GOLD_EARNED">
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-primary">
+               10,364
+              </div>
+             </div>
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-secondary">
+               636 / min
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-updated-challenge-component">
+             <img class="scoreboard-updated-challenge-icon" src="/lol-game-data/assets/ASSETS/Challenges/Config/120001/Tokens/IRON.png"/>
+            </div>
+           </div>
+           <div class="scoreboard-row-hover-overlay">
+            <div class="scoreboard-row-player-controls-container">
+             <div class="postgame-player-buttons">
+              <button class="postgame-player-button-add-friend">
+              </button>
+              <button class="postgame-player-invite-to-party">
+              </button>
+              <button class="postgame-player-button-report">
+              </button>
+             </div>
+            </div>
+           </div>
+          </div>
+          <div class="scoreboard-row-separator top">
+          </div>
+          <div class="scoreboard-row-separator top">
+          </div>
+          <div class="scoreboard-row-separator top">
+          </div>
+          <div class="scoreboard-row-separator bottom">
+          </div>
+         </div>
+        </div>
+        <div class="scoreboard-header-component">
+         <div class="scoreboard-header-content">
+          <div class="scoreboard-header-team-name">
+           Team 2
+          </div>
+          <div class="scoreboard-header-separator-icon">
+          </div>
+          <div class="scoreboard-header-stat-container">
+           <div class="scoreboard-header-icon small kda">
+           </div>
+           <div class="scoreboard-header-stat-label">
+            18 / 24 / 24
+           </div>
+          </div>
+          <div class="scoreboard-header-separator-icon">
+          </div>
+          <div class="scoreboard-header-stat-container">
+           <div class="scoreboard-header-icon small gold">
+           </div>
+           <div class="scoreboard-header-stat-label">
+            51,783
+           </div>
+          </div>
+         </div>
+         <div class="scoreboard-header-spacer">
+         </div>
+        </div>
+        <div class="scoreboard-team-container">
+         <div class="scoreboard-team">
+          <div class="scoreboard-row-separator top">
+          </div>
+          <div class="scoreboard-row-component not-in-chat">
+           <div class="scoreboard-row-content-container centered-flex-box">
+            <div class="scoreboard-row-color-bar">
+            </div>
+            <div class="scoreboard-row-player-details-container">
+             <div class="scoreboard-row-skin-background" style="background-image: url(/lol-game-data/assets/ASSETS/Characters/Ezreal/Skins/Base/Images/ezreal_splash_centered_0.jpg)">
+             </div>
+             <div class="scoreboard-row-skin-overlay">
+             </div>
+             <div class="scoreboard-row-skin-overlay secondary">
+             </div>
+             <div class="scoreboard-row-details-content horizontal-flex-box">
+              <div class="scoreboard-row-position-level-container">
+               <div class="scoreboard-row-in-game-level centered-flex-box">
+                14
+               </div>
+              </div>
+              <div class="scoreboard-row-spacer">
+              </div>
+              <div class="scoreboard-row-name-and-champ-container vertical-flex-box">
+               <div class="scoreboard-row-player-name">
+                Ezreal bot
+               </div>
+               <div class="scoreboard-row-champ-name">
+                Ezreal
+               </div>
+              </div>
+              <div class="scoreboard-row-actions-button-container centered-flex-box">
+              </div>
+              <div class="scoreboard-row-mute-indicator" id="mute-indicator">
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-pike">
+            </div>
+            <div class="scoreboard-row-keystone-container centered-flex-box">
+             <div class="scoreboard-row-keystone-alignment-container">
+              <div class="postgame-player-keystone-icon circle-icon-holder">
+               <img class="postgame-player-keystone-icon-img" src="/lol-game-data/assets/v1/perk-images/Styles/Precision/Conqueror/Conqueror.png"/>
+              </div>
+              <div class="postgame-player-keystone-icon circle-icon-holder is-sub-style">
+               <img class="postgame-player-keystone-icon-img" src="/lol-game-data/assets/v1/perk-images/Styles/7203_Whimsy.png"/>
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-summoner-spells-container vertical-flex-box centered-flex-box">
+             <div class="scoreboard-spell-component is-small">
+              <div class="postgame-player-spell-icon-container">
+               <img class="postgame-player-spell-icon" src="/lol-game-data/assets/DATA/Spells/Icons2D/SummonerBarrier.png"/>
+              </div>
+             </div>
+             <div class="scoreboard-spell-component is-small">
+              <div class="postgame-player-spell-icon-container">
+               <img class="postgame-player-spell-icon" src="/lol-game-data/assets/DATA/Spells/Icons2D/Summoner_flash.png"/>
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-items-container centered-flex-box">
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3078_Fighter_T4_TrinityForce.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3042_Marksman_T3_Muramana.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/2055_Class_T1_ControlWard.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3133_Fighter_T2_CaulfieldsWarhammer.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3158_Class_T2_IonianBootsofLucidity.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3161_Fighter_T3_SpearofShojin.png);">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(/lol-game-data/assets/ASSETS/Items/Icons2D/3363_Class_T1_FarSightAlteration.png);">
+             </div>
+             <div class="item-spacer">
+             </div>
+             <div class="postgame-player-item" style="background-image: url(undefined);">
+             </div>
+            </div>
+            <div class="scoreboard-row-stat-display-component INDIVIDUAL_KDA">
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-primary">
+               8 / 5 / 6
+              </div>
+             </div>
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-secondary">
+               2.8 KDA
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-stat-display-component TOTAL_DAMAGE_DEALT_TO_CHAMPIONS">
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-primary">
+               19,558
+              </div>
+             </div>
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-graph-container">
+               <div class="scoreboard-row-stat-graph-fill css-animate" style="transform: matrix(1, 0, 0, 1, 0, 0); z-index: 0;">
+               </div>
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-row-stat-display-component GOLD_EARNED">
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-primary">
+               11,621
+              </div>
+             </div>
+             <div class="scoreboard-row-stat-sizer centered-flex-box">
+              <div class="scoreboard-row-stat-line-secondary">
+               714 / min
+              </div>
+             </div>
+            </div>
+            <div class="scoreboard-updated-challenge-component">
+             <img class="scoreboard-updated-challenge-icon" src="/fe/lol-static-assets/images/challenges-shared/icon_background.png"/>
+            </div>
+           </div>
+           <div class="scoreboard-row-hover-overlay">
+           </div>
+          </div>
+          <div class="scoreboard-row-separator top">
+          </div>
+          <div class="scoreboard-row-separator top">
+          </div>
+          <div class="scoreboard-row-separator top">
+          </div>
+          <div class="scoreboard-row-separator top">
+          </div>
+          <div class="scoreboard-row-separator bottom">
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+     <div class="postgame-header-section">
+      <div class="postgame-header-background">
+      </div>
+      <div class="postgame-header-container">
+       <div class="postgame-header">
+        <div class="postgame-game-result-icon">
+         <div class="postgame-map-icon" style="background-image: url(lol-game-data/assets/content/src/LeagueClient/GameModeAssets/Classic_SRU/img/icon-victory.png);">
+         </div>
+        </div>
+        <div class="postgame-header-wrapper">
+         <div class="postgame-game-result postgame-victory">
+          <div class="postgame-outcome">
+           VICTORY
+          </div>
+         </div>
+         <div class="postgame-game-info">
+          <div class="postgame-map-info">
+           <div class="postgame-map-info-item-game-mode">
+            Beginner
+           </div>
+           <div class="postgame-map-info-item-win-loss">
+            W:2 - L:0
+           </div>
+           <div class="postgame-map-info-item-game-length">
+            16:17
+           </div>
+           <div class="game-id-clipboard-copy-component">
+            <div class="clipboard-copy-game-id-container">
+             <div class="clipboard-copy-game-id-inner-container">
+              GameID
+              <div class="clipboard-copy-icon">
+              </div>
+             </div>
+            </div>
+           </div>
+          </div>
+         </div>
+        </div>
+       </div>
+       <div class="postgame-header-button-container">
+        <div class="postgame-replay-button">
+         <div class="replay-button">
+          <button class="download">
+          </button>
+          <div class="preload-download-click">
+          </div>
+          <div class="preload-download-disabled">
+          </div>
+          <div class="preload-download-hover">
+          </div>
+          <div class="preload-download">
+          </div>
+          <div class="preload-error-hover">
+          </div>
+          <div class="preload-error">
+          </div>
+          <div class="preload-pending">
+          </div>
+          <div class="preload-watch-click">
+          </div>
+          <div class="preload-watch-disabled">
+          </div>
+          <div class="preload-watch-hover">
+          </div>
+          <div class="preload-watch">
+          </div>
+         </div>
+        </div>
+        <lol-uikit-flat-button class="postgame-match-history-button">
+         VIEW ADVANCED DETAILS
+        </lol-uikit-flat-button>
+       </div>
+      </div>
+     </div>
+     <div class="postgame-footer">
+      <div class="left-container">
+       <div class="chat-container">
+        <lol-social-chat-room class="scoreboard-v2 blc-messages-unlocked blc-stretched focused-chat-box" placeholder="Click or press Enter to view" room-changed-messages="[]" style="--blc-chat-left:0px; --blc-chat-w:322px; --blc-chat-top:-356px; --blc-chat-h:540px; --blc-frame-h:506px;" type="postGame">
+         <div class="chat-box focused-chat-box">
+          <iframe data-blc-hooked="1" id="embedded-messages-frame">
+          </iframe>
+          <lol-social-chat-input class="chat-room-input" room-type="postGame">
+           <pre class="input-sizer"><span></span><br/></pre>
+           <textarea class="chat-input" maxlength="200" placeholder="" rows="1"></textarea>
+           <div class="chat-toggle-button">
+            <div class="chat-divider">
+            </div>
+            <span class="chat-placeholder-text">
+             Click or
+             <kbd>
+              Enter
+             </kbd>
+             to View
+            </span>
+           </div>
+          </lol-social-chat-input>
+         </div>
+        </lol-social-chat-room>
+       </div>
+      </div>
+      <div class="center-container">
+       <lol-uikit-close-button class="postgame-footer-exit-button">
+       </lol-uikit-close-button>
+       <div class="find-match-button-container">
+        <div class="find-match-button-decoration find-match-button-decoration-left">
+        </div>
+        <div class="postgame-button-wrapper">
+         <div class="postgame-button">
+          <div class="postgame-state up">
+           <div class="img-container">
+            <img src="/fe/lol-static-assets/images/buttons/find_match_default.png"/>
+           </div>
+          </div>
+          <lol-uikit-video-state-machine class="postgame-button-vsm">
+           <lol-uikit-video-group class="postgame-button-video">
+            <lol-uikit-video-state state="intro">
+             <lol-uikit-video preload="" src="/fe/lol-static-assets/videos/find-match-button-intro.webm" type="intro">
+             </lol-uikit-video>
+            </lol-uikit-video-state>
+            <lol-uikit-video-state state="idle">
+             <lol-uikit-video src="/fe/lol-static-assets/videos/find-match-button-idle.webm" type="idle">
+             </lol-uikit-video>
+            </lol-uikit-video-state>
+            <lol-uikit-video-state state="active">
+             <lol-uikit-video src="/fe/lol-static-assets/videos/find-match-button-active.webm" type="intro">
+             </lol-uikit-video>
+            </lol-uikit-video-state>
+            <lol-uikit-video-state state="hover">
+             <lol-uikit-video src="/fe/lol-static-assets/videos/find-match-button-hover.webm" type="idle">
+             </lol-uikit-video>
+            </lol-uikit-video-state>
+           </lol-uikit-video-group>
+          </lol-uikit-video-state-machine>
+          <lol-uikit-video-state-machine class="postgame-return-button-vsm">
+           <lol-uikit-video-group class="postgame-return-button-video">
+            <lol-uikit-video-state no-preserve-state="" state="pulse">
+             <lol-uikit-video src="/fe/lol-static-assets/videos/find-match-button-pulse.webm" type="outro">
+             </lol-uikit-video>
+            </lol-uikit-video-state>
+            <lol-uikit-video-state state="all-returned">
+             <lol-uikit-video src="/fe/lol-static-assets/videos/find-match-button-all-returned.webm" type="idle">
+             </lol-uikit-video>
+            </lol-uikit-video-state>
+           </lol-uikit-video-group>
+          </lol-uikit-video-state-machine>
+          <div class="button-text up">
+           Play Again
+          </div>
+         </div>
+        </div>
+        <div class="find-match-button-decoration find-match-button-decoration-right">
+        </div>
+        <div class="career-postgame-countdown-meter-container">
+         <img class="career-postgame-countdown-meter-background" src="/fe/lol-postgame/countdown_meter_bg.svg"/>
+         <img class="career-postgame-countdown-meter" src="/fe/lol-postgame/countdown_meter.svg" style="z-index: 0; transform: matrix(0, 0, 0, 1, 0, 0);"/>
+        </div>
+       </div>
+       <div class="postgame-party-status-v2">
+        <div class="postgame-party-status-v2-display" showhover="false">
+        </div>
+       </div>
+      </div>
+      <div class="right-container">
+       <div class="postgame-scoreboard-progression-honor-notification-component active honor-v3">
+        <div class="honor-v3-postgame-notification-contents">
+         <img class="honor-v3-postgame-notification-icon" src="/fe/lol-postgame/Honor-Emblem.png"/>
+         <uikit-video class="honor-v3-postgame-notification-flair" muted="" preload="" src="/fe/lol-postgame/mograph/EOG_Honor_Trail.webm">
+         </uikit-video>
+         <img class="honor-v3-postgame-notification-highlight" src="/fe/lol-postgame/Honor-Highlight.png"/>
+         <div class="honor-v3-postgame-notification-container">
+          <div class="honor-v3-postgame-notification-animation">
+           <uikit-video autoplay="" class="honor-v3-postgame-notification-animation-video" muted="" preload="" src="/fe/lol-postgame/mograph/EOG_Honor_Received.webm">
+           </uikit-video>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+     <div class="career-postgame-sub-navigation-component">
+      <lol-uikit-navigation-bar class="postgame-sub-navigation-container" selectedindex="1" type="nav-bar-secondary">
+       <div>
+        <lol-uikit-navigation-item>
+         Progression
+        </lol-uikit-navigation-item>
+       </div>
+       <div>
+        <lol-uikit-navigation-item active="true">
+         Scoreboard
+        </lol-uikit-navigation-item>
+       </div>
+      </lol-uikit-navigation-bar>
+     </div>
+     <div class="postgame-progression-lottie-outline">
+      <lol-uikit-lottie autoplay="false" id="lottie-outline-anim" src="/fe/lol-static-assets/lottie/postgame/postgame-screen-border.json">
+      </lol-uikit-lottie>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+
