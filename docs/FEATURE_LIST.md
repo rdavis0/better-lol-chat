@@ -20,15 +20,26 @@ Status tracks implementation.
 
 ## Planned — client (Pengu)
 
-### Name display mode
-- [ ] **Toggle champion names ↔ player names**
-  User can switch the post-game chat name column between:
-  - **Champion** (current default) — e.g. `Jinx`
-  - **Player** — Riot ID as Riot shows it, e.g. `Name#TAG`
-  Prefer a small control on/near the chat chrome (not buried in settings). Remember last choice for the session at minimum; persist across games if easy.
+### Options
+One gear on the chat chrome opens a small panel. Do not put five toggles on the bar itself. Every control is a toggle.
+
+Persistence uses the League client’s `localStorage` under a namespaced key (for example `blc-settings`). On load, merge saved values over the defaults so an update that adds a toggle keeps prior choices and only fills new keys. Survives plugin updates. Cleared if the user uninstalls League or wipes client storage — acceptable. Do not write settings through `context.fs`.
+
+- [ ] Gear control that opens / closes the options panel
+- [ ] **Taller chat window** — current scoreboard stretch. Off leaves Riot’s height.
+- [ ] **Replace player names with champion names** — current default on. Off shows the Riot ID (`Name#TAG`).
+- [ ] **Show champion icons** next to chat names.
+- [ ] **Automatically open chat** — current keep-open behavior on the scoreboard. Off leaves Riot’s click-outside collapse.
+- [ ] **Automatically focus chat** — put the caret in the input when chat opens. Do not use `textarea.focus()` until a capture shows a way that does not scroll the whole client.
+- [ ] Load / save the toggle set via `localStorage` (merge with defaults on load)
+
+### Pre-game chat
+Not started. Post-game was the prototype because champion mapping comes from the end-of-game stats block, which does not exist in champ select or the lobby. Pre-game needs its own room type, its own player list (picks change during select), and a DOM capture before the same toggles can apply.
+
+- [ ] Champion names, team colors, and champion icons in champ-select chat
+- [ ] Same options as post-game, once that screen’s chat DOM is captured
 
 ### Readability
-- [ ] Champion icons next to names
 - [ ] Optional timestamps on messages
 - [ ] Message spacing / readability polish
 - [ ] More robust identity mapping if eog/PUUID fields change

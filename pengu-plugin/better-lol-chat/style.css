@@ -10,7 +10,6 @@ lol-social-chat-room[type='postGame'].blc-stretched:not(.blc-collapsed) {
   height: var(--blc-chat-h) !important;
   max-height: none !important;
   bottom: auto !important;
-  z-index: 20;
 }
 
 lol-social-chat-room[type='postGame'].blc-stretched:not(.blc-collapsed) .chat-box {
@@ -34,8 +33,24 @@ lol-social-chat-room[type='postGame'].blc-stretched:not(.blc-collapsed) lol-soci
 
 .blc-row-champ {
   position: absolute;
-  z-index: 4;
   pointer-events: none;
   object-fit: cover;
   border-radius: 2px;
+}
+
+/* Vanilla dims not-in-chat splash to 0.5; we go darker and match champ icons. */
+.scoreboard-row-component.not-in-chat
+  .scoreboard-row-player-details-container
+  .scoreboard-row-skin-background,
+.scoreboard-row-component.not-in-chat
+  .scoreboard-row-player-details-container
+  .scoreboard-row-skin-background-strawberry,
+.scoreboard-row-component.not-in-chat
+  .scoreboard-row-player-details-container
+  .scoreboard-row-skin-background-jade,
+.scoreboard-row-component.not-in-chat > .blc-row-champ,
+.strawberry-scoreboard-row-component.not-in-chat > .blc-row-champ,
+.jade-scoreboard-row-component.not-in-chat > .blc-row-champ {
+  opacity: 0.5;
+  filter: grayscale(0.75);
 }

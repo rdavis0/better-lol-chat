@@ -6,7 +6,7 @@ Unofficial Pengu Loader plugin that improves League of Legends **post-game chat*
 
 Living checklist (shipped + planned): [`docs/FEATURE_LIST.md`](docs/FEATURE_LIST.md)
 
-Chat DOM and behavior for future work: [`docs/CHAT_INTERFACE.md`](docs/CHAT_INTERFACE.md). Trimmed live post-game export: [`docs/fixtures/postgame-screen.html`](docs/fixtures/postgame-screen.html).
+Chat DOM and behavior for future work: [`docs/CHAT_INTERFACE.md`](docs/CHAT_INTERFACE.md). Live exports: [`docs/fixtures/postgame-screen.html`](docs/fixtures/postgame-screen.html), [`docs/fixtures/messages.html`](docs/fixtures/messages.html), [`docs/fixtures/postgame-messages.json`](docs/fixtures/postgame-messages.json).
 
 Planned client and companion work, including emoji input in the standalone app only, is in the feature list.
 

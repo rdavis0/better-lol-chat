@@ -1,5 +1,9 @@
 # Captures to validate the chat docs
 
+- [x] Connected message list — [`docs/fixtures/messages.html`](fixtures/messages.html) (2026-09-23). Captured with the plugin running, so names are already champions and leave rows already use `.blc-system-name`.
+- [x] Matching LCU messages — [`docs/fixtures/postgame-messages.json`](fixtures/postgame-messages.json)
+- [ ] Arena end-of-game block and scoreboard
+
 Do this on a post-game screen while the chat session is still connected. An expired frame only shows `.messages.disconnected` and cannot confirm the row markup. `docs/fixtures/postgame-screen.html` is not a substitute: its iframe is empty.
 
 Save the results under `docs/fixtures/`. The full client page and another inject into an expired frame are not needed.

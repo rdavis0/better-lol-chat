@@ -1,0 +1,70 @@
+:root {
+  --blc-name-ally: #16cae5;
+  --blc-name-enemy: #ff1a3e;
+  --blc-name-mine: #fabe0a;
+  --blc-message-ally: #a1deed;
+  --blc-message-enemy: #e7c1c8;
+  --blc-message-mine: #978a5e;
+  --blc-leave-name: inherit;
+  --blc-celebration: #a3862e;
+  --blc-credit: #ffd700;
+  --blc-credit-bg: #0e0638;
+}
+
+.message-box.blc-hide-join {
+  display: none !important;
+}
+
+.message-box.my-team .message-name {
+  color: var(--blc-name-ally) !important;
+}
+
+.message-box.other-team .message-name {
+  color: var(--blc-name-enemy) !important;
+}
+
+.message-box.mine .message-name {
+  color: var(--blc-name-mine) !important;
+}
+
+.message-box.my-team .message {
+  color: var(--blc-message-ally) !important;
+}
+
+.message-box.other-team .message {
+  color: var(--blc-message-enemy) !important;
+}
+
+.message-box.mine .message {
+  color: var(--blc-message-mine) !important;
+}
+
+/* Leave names: plain system gray. Hooks for settings. */
+.message-box.my-team .blc-system-name,
+.message-box.other-team .blc-system-name,
+.message-box.mine .blc-system-name {
+  color: var(--blc-leave-name) !important;
+}
+
+.system-message .celebration {
+  color: var(--blc-celebration) !important;
+}
+
+.blc-credit {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin: 0 !important;
+  padding: 4px 0px;
+  color: var(--blc-credit) !important;
+  font-weight: 700 !important;
+  background: var(--blc-credit-bg);
+  width: 100% !important;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.blc-credit.blc-credit-hidden {
+  display: none !important;
+}

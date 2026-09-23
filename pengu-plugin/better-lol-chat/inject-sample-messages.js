@@ -5,7 +5,9 @@
  * Re-running replaces the previous sample. Clear with:
  *   window.__blcClearSampleMessages()
  *
- * Names are hardcoded champions. Team classes still drive the colors.
+ * Shape matches docs/fixtures/messages.html (2026-09-23). Names are hardcoded
+ * champions. Team classes still drive the colors. A space text node sits between
+ * the name, the colon, and the body, same as the client template.
  */
 (function blcInjectSampleMessages() {
   const SAMPLE = 'blc-sample';
@@ -117,6 +119,7 @@
   function ensureMessages(root) {
     const list = root.createElement('div');
     list.className = 'messages';
+    list.setAttribute('lang', 'en-US');
     root.body.appendChild(list);
     return list;
   }
@@ -140,7 +143,7 @@
     message.className = 'message';
     message.textContent = body;
 
-    chat.append(name, colon, message);
+    chat.append(name, root.createTextNode(' '), colon, root.createTextNode(' '), message);
     box.appendChild(chat);
     return box;
   }

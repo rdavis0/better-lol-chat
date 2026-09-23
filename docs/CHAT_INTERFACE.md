@@ -45,7 +45,9 @@ While open on the scoreboard, the room is stretched with `blc-stretched`. Its to
 
 ## Messages iframe
 
-The host export’s iframe is empty. Rows are rendered inside `iframe#embedded-messages-frame` from this client template (`lol-social-chat-room`, patch line of `rcp-fe-lol-social`):
+The host export’s iframe is empty. The connected list is [`docs/fixtures/messages.html`](fixtures/messages.html), paired with [`docs/fixtures/postgame-messages.json`](fixtures/postgame-messages.json) (2026-09-23). That HTML was captured while this plugin was running: chat names are already champion names, join rows have `blc-hide-join`, and leave rows already contain `.blc-system-name`.
+
+Rows are rendered inside `iframe#embedded-messages-frame`. The list element is `<div class="messages" lang="en-US">`. Client template (`lol-social-chat-room`, `rcp-fe-lol-social`):
 
 ```html
 <div class="messages" ref="messageContainer">
@@ -67,37 +69,44 @@ The host export’s iframe is empty. Rows are rendered inside `iframe#embedded-m
 </div>
 ```
 
-Only one of `.system-message` or `.chat-message` is present. A row is a system row when the message is not a chat message. Confirmed rendered HTML from the live iframe:
+Only one of `.system-message` or `.chat-message` is present. A row is a system row when the message is not a chat message. Confirmed from the live iframe:
 
 ```html
-<div class="message-box my-team">
-  <div class="system-message">
-    <span>⁦⁦Chaotic Fiasco⁩ #⁦NA1⁩⁩ joined the lobby</span>
+<div class="messages" lang="en-US">
+  <div class="message-box my-team blc-hide-join">
+    <div class="system-message">
+      <span>⁦⁦Name⁩ #⁦TAG⁩⁩ joined the lobby</span>
+    </div>
   </div>
-</div>
-
-<div class="message-box other-team">
-  <div class="system-message">
-    <span>⁦⁦Ezreal bot⁩ #⁦BOT⁩⁩ joined the lobby</span>
+  <div class="message-box other-team">
+    <div class="system-message">
+      <span><span class="blc-system-name">Braum</span> left the lobby</span>
+    </div>
   </div>
-</div>
-
-<div class="message-box mine">
-  <div class="chat-message">
-    <div class="message-name">⁦⁦Chaotic Fiasco⁩ #⁦NA1⁩⁩</div>
-    <span class="message"> : </span>
-    <span class="message">afaewf</span>
+  <div class="message-box mine">
+    <div class="chat-message">
+      <div class="message-name">Jhin</div>
+      <span class="message">:</span>
+      <span class="message">gg tho was fun</span>
+    </div>
+  </div>
+  <div class="message-box other-team">
+    <div class="system-message">
+      <span class="celebration">Everyone on your team honored a teammate! You got a little extra Honor progress this game.</span>
+    </div>
   </div>
 </div>
 ```
+
+This capture has `.mine` and `.other-team` chat lines. `.my-team` appears on join and leave rows. No ally chat line was in the log.
 
 Inject sample rows into `iframe.contentDocument.querySelector('.messages')`. An expired or disconnected session still has that node (`class="messages disconnected"`) and the frame stylesheet. The chat socket does not need to be connected. Do not append to the iframe `body`: it is `display: flex; flex-wrap: wrap`, so rows sit side by side, and the 12px font, line-height, and padding (`5px 7px 7px 10px`) are on `.messages`, not on `body`. If `.messages` is missing, create one and append it to `body`. Re-running should remove the previous sample nodes from that same parent.
 
 ### Chat line
 
-- `.message-name` is one node. Its text is the Riot ID, not the champion. The plugin rewrites that text only when it matches a mapped alias (`Name#TAG` or the game name before `#`). Putting a champion name in `.message-name` skips the rewrite; team color still applies from the row class.
-- The colon is its own `<span class="message">:</span>`. The body is a second `<span class="message">` whose text is the LCU `body`. Do not combine them.
-- There is no space text node between the name and the colon. The body span’s text does not include a leading colon.
+- `.message-name` is one node. Before this plugin rewrites it, the text is the Riot ID. The plugin replaces that text only when it matches a mapped alias (`Name#TAG` or the game name before `#`). A champion name already in `.message-name` is left as-is. Team color still comes from the row class.
+- The colon is its own `<span class="message">:</span>`. The text is `:`, with no spaces inside the span. The body is a second `<span class="message">` whose text is the LCU `body`.
+- The client template leaves whitespace between those three nodes. Collapsed, that is one space before the colon and one space after it. Sample rows need those space text nodes. Without them the colon sits against the name.
 
 
 
@@ -106,7 +115,7 @@ Inject sample rows into `iframe.contentDocument.querySelector('.messages')`. An 
 - One `<span>` inside `.system-message`. No `.message-name`.
 - LCU `type: "system"` and `body: "joined_room"` render as `{displayName} joined the lobby`. `body: "left_room"` renders as `{displayName} left the lobby`. The body field is the localization key, not the sentence.
 - Join rows are hidden by adding `blc-hide-join` on the `.message-box` when the span text matches `joined the lobby` or `joined the room`. Leave rows stay. The leave sentence must remain one span so the name can be split off: after bidi marks are stripped, it is `Name #TAG left the lobby`. The name becomes `<span class="blc-system-name">Champion</span>` and the rest of the text stays gray.
-- `type: "celebration"` also uses `.system-message > span`. Its text is the celebration body itself (for example `Name earned an S+ on Ekko`), and the span may have class `celebration`.
+- `type: "celebration"` uses the same `.system-message` wrapper. In this capture the span itself has class `celebration`, and its text is the LCU `body` (the honor sentence). `fromId`, `fromPuuid`, and `fromSummonerId` are empty. The row class was `other-team`.
 
 
 
@@ -125,16 +134,17 @@ Example: `⁦⁦Chaotic Fiasco⁩ #⁦NA1⁩⁩`. Strip `U+200E`, `U+200F`, `U+2
 Set the class on `.message-box`. The client picks it from `message.fromId === me.id` (mine), otherwise `fromSummonerId` against the end-of-game roster (my-team or other-team). A sample row only needs the class:
 
 
-| Row class     | Who          | Color     |
-| ------------- | ------------ | --------- |
-| `.my-team`    | Allies       | `#16cae5` |
-| `.other-team` | Enemies      | `#be1e37` |
-| `.mine`       | Local player | `#c89b3c` |
+| Row class     | Who          | Name color | Message body |
+| ------------- | ------------ | ---------- | ------------ |
+| `.my-team`    | Allies       | `#16cae5`  | client default |
+| `.other-team` | Enemies      | `#ff1a3e`  | client default |
+| `.mine`       | Local player | `#16cae5` (same as allies for now) | `#348995` |
 
+Colors live as CSS variables on the iframe `:root` in `frame.css` (`--blc-name-ally`, `--blc-name-enemy`, `--blc-name-mine`, `--blc-message-mine`, `--blc-leave-name`, `--blc-celebration`). Class hooks stay even when a role uses the client default, so a later settings panel can assign colors without new selectors.
 
-Name and both `.message` spans take that color. `.message-name` is bold. Leave-row `.blc-system-name` uses the muted mix (ally `#70abab`, enemy `#ab6f6e`, you `#ae9b70`).
+Leave-row `.blc-system-name` inherits the system gray (`--blc-leave-name: inherit`). Celebration text uses `--blc-celebration` (`#a3862e`).
 
-LCU groupchat messages often have `fromSummonerId: 0` and `fromPuuid` / `fromId` set to the sender puuid. System `joined_room` / `left_room` messages carry both `fromPuuid` and `fromSummonerId`.
+LCU `groupchat` messages in the 2026-09-23 capture use `fromSummonerId: 0`. `fromPuuid` is the bare puuid. `fromId` and `fromPid` are `{puuid}@{region}.pvp.net`. System `joined_room` / `left_room` messages use the bare puuid as `fromId` and a nonzero `fromSummonerId`. The post-game conversation id looks like `{gameId}-eog@lol-post-game.{region}.pvp.net`.
 
 ### Credit
 
