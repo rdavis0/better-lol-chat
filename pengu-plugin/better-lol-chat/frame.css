@@ -8,7 +8,7 @@
   --blc-leave-name: inherit;
   --blc-celebration: #a3862e;
   --blc-credit: #ffd700;
-  --blc-credit-bg: #0e0638;
+  --blc-credit-bg: #231281;
 }
 
 .message-box.blc-hide-join {
@@ -56,10 +56,10 @@
   left: 0 !important;
   right: 0 !important;
   margin: 0 !important;
-  padding: 4px 0px;
+  padding: 4px 0px 6px;
   color: var(--blc-credit) !important;
   font-weight: 700 !important;
-  background: var(--blc-credit-bg);
+  background-image: linear-gradient(to bottom, var(--blc-credit-bg), rgb(1 10 19 / 95%));
   width: 100% !important;
   text-align: center;
   box-sizing: border-box;

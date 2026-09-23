@@ -31,6 +31,13 @@ lol-social-chat-room[type='postGame'].blc-stretched:not(.blc-collapsed) lol-soci
   flex: 0 0 auto !important;
 }
 
+/* Drop the red inset top shadow on the focused post-game chat chrome. */
+lol-social-chat-room[type='postGame'].scoreboard-v2.focused-chat-box:not(.chat-room-disabled)::after,
+lol-social-chat-room[type='postGame'].focused-chat-box:not(.chat-room-disabled)::after,
+lol-social-chat-room[type='postGame'] .shadow-effect {
+  box-shadow: none !important;
+}
+
 .blc-row-champ {
   position: absolute;
   pointer-events: none;
