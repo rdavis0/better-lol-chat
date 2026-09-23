@@ -29,8 +29,6 @@ Persistence uses the League client’s `localStorage` under a namespaced key (fo
 - [ ] **Taller chat window** — current scoreboard stretch. Off leaves Riot’s height.
 - [ ] **Replace player names with champion names** — current default on. Off shows the Riot ID (`Name#TAG`).
 - [ ] **Show champion icons** next to chat names.
-- [ ] **Scoreboard champion icons** — current gap icons between items and KDA. Off leaves the scoreboard alone.
-- [ ] **Hide join rows** — current default on.
 - [ ] **Colored message bodies** — tint ally / enemy / your `.message` text. Off leaves Riot’s body color (names can stay team-colored).
 - [ ] **Custom colors** — pick name and body colors (ally / enemy / you). Defaults are the current CSS variables.
 - [ ] **Stronger not-in-chat dim** — current scoreboard splash + gap-icon fade/grayscale. Off leaves Riot’s `opacity: .5` only.
