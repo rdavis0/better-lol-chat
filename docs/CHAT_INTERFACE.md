@@ -45,7 +45,7 @@ While open on the scoreboard, the room is stretched with `blc-stretched`. Its to
 
 ## Messages iframe
 
-The host export’s iframe is empty. The connected list is [`docs/fixtures/messages.html`](fixtures/messages.html), paired with [`docs/fixtures/postgame-messages.json`](fixtures/postgame-messages.json) (2026-09-23). That HTML was captured while this plugin was running: chat names are already champion names, join rows have `blc-hide-join`, and leave rows already contain `.blc-system-name`.
+The host export’s iframe is empty. The connected list is `[docs/fixtures/messages.html](fixtures/messages.html)`, paired with `[docs/fixtures/postgame-messages.json](fixtures/postgame-messages.json)` (2026-09-23). That HTML was captured while this plugin was running: chat names are already champion names, join rows have `blc-hide-join`, and leave rows already contain `.blc-system-name`.
 
 Rows are rendered inside `iframe#embedded-messages-frame`. The list element is `<div class="messages" lang="en-US">`. Client template (`lol-social-chat-room`, `rcp-fe-lol-social`):
 
@@ -131,14 +131,17 @@ Example: `⁦⁦Chaotic Fiasco⁩ #⁦NA1⁩⁩`. Strip `U+200E`, `U+200F`, `U+2
 
 ### Team class
 
-Set the class on `.message-box`. The client picks it from `message.fromId === me.id` (mine), otherwise `fromSummonerId` against the end-of-game roster (my-team or other-team). A sample row only needs the class:
+The client sets the class on `.message-box` from `message.fromId === me.id` (mine), otherwise `fromSummonerId` against the end-of-game roster (my-team or other-team). Post-game `groupchat` messages often have `fromSummonerId: 0`, so allies are wrongly marked `.other-team`.
+
+This plugin reclassifies each row from the eog roster (`player.ally`): match the speaker via Riot ID / leave text / unique champion name, then force `.my-team` or `.other-team`. `.mine` and celebration rows are left alone. A sample row only needs the correct class:
 
 
-| Row class     | Who          | Name color | Message body |
-| ------------- | ------------ | ---------- | ------------ |
-| `.my-team`    | Allies       | `#16cae5`  | client default |
-| `.other-team` | Enemies      | `#ff1a3e`  | client default |
-| `.mine`       | Local player | `#16cae5` (same as allies for now) | `#348995` |
+| Row class     | Who          | Name color                         | Message body   |
+| ------------- | ------------ | ---------------------------------- | -------------- |
+| `.my-team`    | Allies       | `#16cae5`                          | client default |
+| `.other-team` | Enemies      | `#ff1a3e`                          | client default |
+| `.mine`       | Local player | `#16cae5` (same as allies for now) | `#348995`      |
+
 
 Colors live as CSS variables on the iframe `:root` in `frame.css` (`--blc-name-ally`, `--blc-name-enemy`, `--blc-name-mine`, `--blc-message-mine`, `--blc-leave-name`, `--blc-celebration`). Class hooks stay even when a role uses the client default, so a later settings panel can assign colors without new selectors.
 

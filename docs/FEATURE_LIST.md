@@ -11,6 +11,7 @@ Status tracks implementation.
 
 - [x] Replace Riot IDs with champion names in post-game chat
 - [x] Color messages by team (allies cyan, enemies red, you gold)
+- [x] Reclassify ally chat rows wrongly marked `.other-team` (groupchat `fromSummonerId` is often 0) using the eog roster
 - [x] Hide “joined the lobby” rows
 - [x] Keep “left the lobby” rows, with the champion name colored by team and the rest of the line gray
 - [x] Keep chat open on click-outside / blur (vs vanilla collapse)

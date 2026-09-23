@@ -749,8 +749,12 @@ function enhance() {
     if (doc) {
       injectFrameStyles(doc);
       insertCredit(doc);
+      // Class before name rewrite: Riot IDs still match aliases. groupchat rows
+      // often ship with fromSummonerId 0, so the client marks allies as other-team.
+      fixTeamClasses(doc);
       rewriteNames(doc);
       rewriteLobbyMessages(doc);
+      fixTeamClasses(doc);
       syncCredit(room);
     }
   } catch (err) {
@@ -897,6 +901,65 @@ function rewriteNames(root) {
 }
 
 const LEAVE_TEXT = /^(.*?)\s+(left(?:\s+the)?\s+(?:room|lobby))\s*$/i;
+
+function fixTeamClasses(root) {
+  if (!roster.length && !nameIndex.length) return;
+
+  const boxes = root.querySelectorAll?.('.message-box') || [];
+  for (const box of boxes) {
+    if (box.classList.contains('mine')) continue;
+    if (box.querySelector?.('.celebration')) continue;
+
+    const player = speakerForBox(box);
+    if (!player) continue;
+
+    const want = player.ally ? 'my-team' : 'other-team';
+    const drop = player.ally ? 'other-team' : 'my-team';
+    if (box.classList.contains(want) && !box.classList.contains(drop)) continue;
+    box.classList.remove(drop);
+    box.classList.add(want);
+  }
+}
+
+function speakerForBox(box) {
+  const nameEl = box.querySelector?.('.chat-message .message-name');
+  if (nameEl) return resolvePlayer(stripBidi(nameEl.textContent || '').trim());
+
+  const span = box.querySelector?.('.system-message span');
+  if (!span) return null;
+
+  const champEl = span.querySelector?.('.blc-system-name');
+  if (champEl) {
+    const fromChamp = resolvePlayer(stripBidi(champEl.textContent || '').trim());
+    if (fromChamp) return fromChamp;
+  }
+
+  const text = stripBidi(span.textContent || '').replace(/\s+/g, ' ').trim();
+  const leave = text.match(LEAVE_TEXT);
+  if (leave) return resolvePlayer(leave[1].trim());
+
+  const join = text.match(/^(.*?)\s+joined(?:\s+the)?\s+(?:room|lobby)\s*$/i);
+  if (join) return resolvePlayer(join[1].trim());
+
+  return null;
+}
+
+function resolvePlayer(text) {
+  const trimmed = stripBidi(text).trim();
+  if (!trimmed) return null;
+
+  const byAlias = matchAlias(trimmed);
+  if (byAlias) return byAlias.player;
+
+  const lower = trimmed.toLowerCase();
+  let hit = null;
+  for (const player of roster) {
+    if (!player.championName || player.championName.toLowerCase() !== lower) continue;
+    if (hit && hit !== player) return null;
+    hit = player;
+  }
+  return hit;
+}
 
 function rewriteLobbyMessages(root) {
   const spans = root.querySelectorAll?.('.system-message span') || [];
