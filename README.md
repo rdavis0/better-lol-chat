@@ -20,4 +20,4 @@ Copy into:
 C:\Program Files\Pengu Loader\plugins\better-postgame-chat
 ```
 
-Restart League (Pengu active). Console should show `[better-postgame-chat]`.
+Restart League (Pengu active). Console should show `[better-lol-chat] v0.1`.

@@ -1,8 +1,9 @@
 import './style.css';
 import frameCss from './frame.css?raw';
 
-const LOG = '[better-postgame-chat]';
-const CREDIT_TEXT = 'better-lol-chat by wryguy';
+const LOG = '[better-lol-chat]';
+const VERSION = '0.1';
+const CREDIT_TEXT = `better-lol-chat v${VERSION} by wryguy`;
 const JOIN_TEXT = /joined(\s+the)?\s+(room|lobby)/i;
 const POSTGAME_PHASES = new Set([
   'WaitingForStats',
@@ -47,6 +48,8 @@ export function init(context) {
 }
 
 export function load() {
+  console.log(LOG, `v${VERSION}`);
+
   fetch('/lol-gameflow/v1/gameflow-phase')
     .then((r) => (r.ok ? r.json() : null))
     .then((phase) => onPhase(phase))

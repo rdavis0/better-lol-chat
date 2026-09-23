@@ -151,7 +151,9 @@ LCU `groupchat` messages in the 2026-09-23 capture use `fromSummonerId: 0`. `fro
 
 ### Credit
 
-`#blc-credit` is appended to the iframe `<html>`, not inside the scrolling message list. It is `position: fixed` at the top of the frame so it does not scroll away. Text: `better-lol-chat by wryguy`. Gold `#ffd700` on `#0e0638`. Font family, size, and line-height are copied from a `.chat-message` / `.message` node. Class `blc-credit-hidden` hides it when chat is minimized (`focused-chat-box` absent, or our collapse flag).
+`#blc-credit` is appended to the iframe `<html>`, not inside the scrolling message list. It is `position: fixed` at the top of the frame so it does not scroll away. Text comes from `CREDIT_TEXT` in `index.js` (currently `better-lol-chat 0.1 by wryguy`). Gold `#ffd700` on `#0e0638`. Font family, size, and line-height are copied from a `.chat-message` / `.message` node. Class `blc-credit-hidden` hides it when chat is minimized (`focused-chat-box` absent, or our collapse flag).
+
+Plugin version is the single `VERSION` constant in `index.js`. It is shown in the credit line and logged once on `load()` as `[better-lol-chat] v0.1`.
 
 ## Identity
 
@@ -201,4 +203,4 @@ Do not insert the icon as a flex child. That shifts the row.
 
 Pengu calls `init(context)` then `load()`. `context.socket.observe(api, listener)` delivers `{ data, uri, eventType }`. Inside the client, `fetch('/lol-...')` needs no basic auth.
 
-Console prefix: `[better-postgame-chat]`.
+Console prefix: `[better-lol-chat]`. Version is logged once on load.
