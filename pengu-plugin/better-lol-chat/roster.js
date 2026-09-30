@@ -4,6 +4,7 @@ const byPuuid = new Map();
 const bySummonerId = new Map();
 let nameIndex = [];
 let roster = [];
+let seedEntries = [];
 
 export function players() {
   return roster;
@@ -18,6 +19,72 @@ export function clearRoster() {
   bySummonerId.clear();
   nameIndex = [];
   roster = [];
+  seedEntries = [];
+}
+
+// Dev hook for util/inject-sample-messages.js. Scoreboard players stay mapped
+// across a later identity refresh so injected rows keep restyling.
+export function seedRoster(entries) {
+  if (!Array.isArray(entries)) return 0;
+  for (const entry of entries) {
+    const summoner = String(entry?.summoner || '').trim();
+    if (!summoner) continue;
+    const key = summoner.toLowerCase();
+    if (seedEntries.some((saved) => saved.summoner.toLowerCase() === key)) continue;
+    seedEntries.push({
+      summoner,
+      championName: String(entry?.champion || '').trim(),
+      iconPath: String(entry?.iconPath || ''),
+      ally: entry?.ally === true,
+    });
+  }
+  return applySeeds();
+}
+
+function applySeeds() {
+  let added = 0;
+  for (const entry of seedEntries) {
+    const existing = playerForAlias(entry.summoner);
+    if (existing) {
+      if (!existing.iconPath && entry.iconPath) existing.iconPath = entry.iconPath;
+      if ((!existing.championName || existing.championName === 'Unknown') && entry.championName) {
+        existing.championName = entry.championName;
+      }
+      continue;
+    }
+    const player = {
+      puuid: null,
+      summonerId: null,
+      teamId: null,
+      championName: entry.championName || 'Unknown',
+      iconPath: entry.iconPath,
+      ally: entry.ally,
+      aliases: [entry.summoner],
+    };
+    roster.push(player);
+    nameIndex.push({ name: entry.summoner, player });
+    added += 1;
+  }
+  if (added) nameIndex.sort((a, b) => b.name.length - a.name.length);
+  return added;
+}
+
+function playerForAlias(summoner) {
+  const lower = summoner.toLowerCase();
+  const hash = lower.indexOf('#');
+  const name = (hash === -1 ? lower : lower.slice(0, hash)).trim();
+  for (const entry of nameIndex) {
+    const alias = entry.name.toLowerCase();
+    if (alias === lower) return entry.player;
+    const aliasHash = alias.indexOf('#');
+    const aliasName = (aliasHash === -1 ? alias : alias.slice(0, aliasHash)).trim();
+    if (!name || aliasName !== name) continue;
+    if (hash === -1 || aliasHash === -1) return entry.player;
+    const tag = lower.slice(hash + 1).trim();
+    const aliasTag = alias.slice(aliasHash + 1).trim();
+    if (!tag || !aliasTag || tag === aliasTag) return entry.player;
+  }
+  return null;
 }
 
 async function lcu(path) {
@@ -77,6 +144,7 @@ export async function refreshIdentities() {
 
   nextAliases.sort((a, b) => b.name.length - a.name.length);
   nameIndex = nextAliases;
+  applySeeds();
   console.log(LOG, 'mapped', list.length, 'players', { conversation: postGameConversationId });
 }
 

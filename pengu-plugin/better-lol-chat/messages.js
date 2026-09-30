@@ -60,6 +60,11 @@ function partsMatch(el, parts) {
       if (node.dataset.blcSrc !== part.icon) return false;
       continue;
     }
+    if (part.parts) {
+      if (node.nodeType !== 1 || !node.classList.contains(part.className)) return false;
+      if (!partsMatch(node, part.parts)) return false;
+      continue;
+    }
     if (part.className) {
       if (node.nodeType !== 1 || !node.classList.contains(part.className)) return false;
       if (node.textContent !== part.text) return false;
@@ -80,6 +85,12 @@ function renderParts(doc, parts) {
       img.dataset.blcSrc = part.icon;
       img.src = part.icon;
       return img;
+    }
+    if (part.parts) {
+      const span = doc.createElement('span');
+      span.className = part.className;
+      span.replaceChildren(...renderParts(doc, part.parts));
+      return span;
     }
     if (part.className) {
       const span = doc.createElement('span');
@@ -205,28 +216,38 @@ function resolvePlayer(text) {
 }
 
 function paintLeaveName(span, original, player, verb, summonerName) {
-  const parts = [];
   const icon = iconPart(player);
-  if (icon) parts.push(icon);
+  const nameParts = [];
+  let verbText = null;
   if (!showsChampion() || !player?.championName) {
-    parts.push({ text: original });
-    paintParts(span, parts);
-    return;
-  }
-  if (!showsSummoner()) {
-    parts.push({ className: 'blc-system-name', text: player.championName });
+    nameParts.push({ text: original });
+  } else if (!showsSummoner()) {
+    nameParts.push({ className: 'blc-system-name', text: player.championName });
+    verbText = ` ${verb}`;
   } else {
-    parts.push({ className: 'blc-system-name', text: summonerLabel(summonerName) });
-    parts.push({ className: 'blc-secondary-name', text: `(${player.championName})` });
+    nameParts.push({ className: 'blc-system-name', text: summonerLabel(summonerName) });
+    nameParts.push({ className: 'blc-secondary-name', text: `(${player.championName})` });
+    verbText = ` ${verb}`;
   }
-  parts.push({ text: ` ${verb}` });
+  const parts = [];
+  if (icon && verbText) {
+    parts.push({ className: 'blc-leave-label', parts: [icon, ...nameParts] });
+    parts.push({ text: verbText });
+  } else {
+    if (icon) parts.push(icon);
+    parts.push(...nameParts);
+  }
   paintParts(span, parts);
 }
 
 function rewriteLobbyMessages(root) {
   const spans = root.querySelectorAll?.('.system-message span') || [];
   for (const span of spans) {
-    if (span.classList.contains('blc-system-name') || span.classList.contains('blc-secondary-name')) {
+    if (
+      span.classList.contains('blc-system-name') ||
+      span.classList.contains('blc-secondary-name') ||
+      span.classList.contains('blc-leave-label')
+    ) {
       continue;
     }
     const box = span.closest('.message-box');

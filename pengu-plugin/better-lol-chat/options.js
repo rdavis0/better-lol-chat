@@ -35,6 +35,8 @@ let deps = {
   getFrameDocument: () => null,
   onCommit: () => {},
   armFrameEscape: () => {},
+  collapseChat: () => {},
+  onOptionsOpen: () => {},
 };
 
 export function initOptions(next) {
@@ -81,20 +83,27 @@ function findSettingsControl() {
     || document.querySelector('.app-controls-settings');
 }
 
-function paintCog(button) {
+function paintChromeButton(button, src, fallback, restVar) {
   if (!button || button.dataset.blcPainted) return;
-  const src = findSettingsControl();
   const cs = src ? getComputedStyle(src) : null;
   if (!hasPaint(cs)) {
-    button.textContent = '⚙';
+    button.textContent = fallback;
     return;
   }
   copyPaint(button, cs);
   // Resting color stays a variable so :hover can replace it. An inline color would win.
   if (button.style.backgroundColor) {
-    button.style.setProperty('--blc-cog-rest', button.style.backgroundColor);
+    button.style.setProperty(restVar, button.style.backgroundColor);
     button.style.backgroundColor = '';
   }
+}
+
+function paintCog(button) {
+  paintChromeButton(button, findSettingsControl(), '⚙', '--blc-cog-rest');
+}
+
+function paintClose(button) {
+  paintChromeButton(button, document.querySelector('.app-controls-close'), '×', '--blc-close-rest');
 }
 
 function findResetPaint() {
@@ -125,7 +134,10 @@ function toggleOptions() {
   const willOpen = panel.hidden;
   panel.hidden = !willOpen;
   cog?.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-  if (willOpen) placeOptionsPanel();
+  if (willOpen) {
+    placeOptionsPanel();
+    deps.onOptionsOpen();
+  }
 }
 
 export function placeOptionsPanel() {
@@ -254,8 +266,26 @@ function buildCreditChrome(doc, el) {
     toggleOptions();
   });
 
-  el.append(label, cog);
+  const close = doc.createElement('button');
+  close.type = 'button';
+  close.className = 'blc-chat-close';
+  close.setAttribute('aria-label', 'Close chat');
+  close.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+  close.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    deps.collapseChat();
+  });
+
+  const tools = doc.createElement('div');
+  tools.className = 'blc-credit-tools';
+  tools.append(cog, close);
+  el.append(label, tools);
   paintCog(cog);
+  paintClose(close);
   hookOptionsDismiss(doc);
   ensureOptionsPanel();
 }
@@ -357,5 +387,8 @@ export function attachCreditChrome(doc, el) {
   if (el.dataset.blcChrome !== chromeToken) {
     buildCreditChrome(doc, el);
     el.dataset.blcChrome = chromeToken;
-  } else paintCog(el.querySelector('.blc-options-cog'));
+  } else {
+    paintCog(el.querySelector('.blc-options-cog'));
+    paintClose(el.querySelector('.blc-chat-close'));
+  }
 }

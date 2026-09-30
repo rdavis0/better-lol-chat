@@ -18,7 +18,7 @@ const COLOR_VARS = {
   messageMine: '--blc-message-mine',
 };
 
-const TOGGLE_KEYS = ['tallerChat', 'strongDim', 'autoOpen', 'showChatIcons'];
+const TOGGLE_KEYS = ['tallerChat', 'showMidRow', 'strongDim', 'autoOpen', 'stickyChat', 'showChatIcons'];
 
 export function normalizeHex(value, allowShort) {
   const match = String(value || '').trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
@@ -40,11 +40,13 @@ function nameStyleFrom(showSummoner, showChampion) {
 function loadSettings() {
   const next = {
     tallerChat: true,
-    nameStyle: 'champion',
+    showMidRow: true,
+    nameStyle: 'summoner',
     showChatIcons: true,
     coloredBodies: true,
     strongDim: true,
     autoOpen: true,
+    stickyChat: true,
     colors: { ...COLOR_DEFAULTS },
   };
   try {
@@ -56,7 +58,11 @@ function loadSettings() {
     if (typeof saved.coloredBodies === 'boolean') next.coloredBodies = saved.coloredBodies;
     if (saved.nameStyle === 'summoner' || saved.nameStyle === 'champion' || saved.nameStyle === 'both') {
       next.nameStyle = saved.nameStyle;
-    } else {
+    } else if (
+      typeof saved.showSummonerNames === 'boolean' ||
+      typeof saved.showChampionNames === 'boolean' ||
+      typeof saved.championNames === 'boolean'
+    ) {
       let showSummoner = false;
       let showChampion = true;
       if (typeof saved.showSummonerNames === 'boolean') showSummoner = saved.showSummonerNames;
@@ -112,6 +118,7 @@ export function applyHostSettings() {
 export function applyFrameSettings(doc) {
   if (!doc?.documentElement) return;
   doc.documentElement.classList.toggle('blc-tint-bodies', settings.coloredBodies);
+  doc.documentElement.classList.toggle('blc-chat-icons', settings.showChatIcons);
   for (const [key, varName] of Object.entries(COLOR_VARS)) {
     doc.documentElement.style.setProperty(varName, settings.colors[key]);
   }

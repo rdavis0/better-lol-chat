@@ -10,6 +10,11 @@
           <span>Large chat window</span>
         </label>
         <label class="blc-switch">
+          <input type="checkbox" data-blc-toggle="showMidRow">
+          <span class="blc-switch-ui" aria-hidden="true"></span>
+          <span>Mid-row icons and level</span>
+        </label>
+        <label class="blc-switch">
           <input type="checkbox" data-blc-toggle="strongDim">
           <span class="blc-switch-ui" aria-hidden="true"></span>
           <span>Stronger inactive player dim</span>
@@ -19,11 +24,23 @@
           <span class="blc-switch-ui" aria-hidden="true"></span>
           <span>Automatically open chat</span>
         </label>
+        <label class="blc-switch">
+          <input type="checkbox" data-blc-toggle="stickyChat">
+          <span class="blc-switch-ui" aria-hidden="true"></span>
+          <span>Sticky chat window</span>
+        </label>
       </div>
     </div>
 
     <div class="blc-options-section">
       <div class="blc-options-heading">Name style</div>
+      <div class="blc-options-group">
+        <label class="blc-switch">
+          <input type="checkbox" data-blc-toggle="showChatIcons">
+          <span class="blc-switch-ui" aria-hidden="true"></span>
+          <span>Champion icons</span>
+        </label>
+      </div>
       <div class="blc-options-group">
         <label class="blc-choice">
           <input type="radio" name="blc-name-style" value="summoner">
@@ -39,11 +56,6 @@
           <input type="radio" name="blc-name-style" value="both">
           <span class="blc-choice-ui" aria-hidden="true"></span>
           <span>Summoner &amp; Champion names</span>
-        </label>
-        <label class="blc-switch">
-          <input type="checkbox" data-blc-toggle="showChatIcons">
-          <span class="blc-switch-ui" aria-hidden="true"></span>
-          <span>Champion icons</span>
         </label>
       </div>
       <div class="blc-options-group blc-options-colors">
