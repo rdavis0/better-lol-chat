@@ -153,7 +153,7 @@ LCU `groupchat` messages in the 2026-09-23 capture use `fromSummonerId: 0`. `fro
 
 `#blc-credit` is appended to the iframe `<html>`, not inside the scrolling message list. It is `position: fixed` at the top of the frame so it does not scroll away. Text comes from `CREDIT_TEXT` in `index.js` (currently `better-lol-chat by wryguy`). Gold `#ffd700` on `#0e0638`. Font family, size, and line-height are copied from a `.chat-message` / `.message` node. Class `blc-credit-hidden` hides it when chat is minimized (`focused-chat-box` absent, or our collapse flag).
 
-Plugin version is the single `VERSION` constant in `index.js` (`0.2`). It is logged once on `load()` as `[better-lol-chat] v0.2` and shown on the update row in the options panel.
+Plugin version is the single `VERSION` constant in `index.js` (`X.X`). It is logged once on `load()` as `[better-lol-chat] vX.X` and shown on the update row in the options panel.
 
 ## Identity
 
