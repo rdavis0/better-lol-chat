@@ -1,57 +1,14 @@
-# better-lol-chat — Feature list
-
-Unofficial post-game chat improvements. One product name, two packages:
-
-- **Client Package** — Pengu plugin that changes Riot's existing screen. Source: `pengu-plugin/better-lol-chat/`.
-- **Standalone App** — separate window. Same name. "Plus" stays the premium tier inside this app, not a second product name.
-
-Status tracks implementation.
-
-## Shipped (Pengu prototype)
-
-- [x] Replace Riot IDs with champion names in post-game chat
-- [x] Color messages by team (allies cyan, enemies red, you gold)
-- [x] Reclassify ally chat rows wrongly marked `.other-team` (groupchat `fromSummonerId` is often 0) using the eog roster
-- [x] Hide “joined the lobby” rows
-- [x] Keep “left the lobby” rows, with the champion name colored by team and the rest of the line gray
-- [x] Keep chat open on click-outside / blur (vs vanilla collapse)
-- [x] Repurpose `.chat-toggle-button` to collapse/expand the full chat window
-- [x] Local gold credit line when post-game chat loads: `better-lol-chat by wryguy`
-- [x] Plugin version constant (`VERSION` in `index.js`); one console log on load, and the version on the options update row
-- [x] Champion icons in the scoreboard gap between items and the KDA column
+# better-lol-chat — Feature backlog
 
 ## Planned — client (Pengu)
-
-### Options
-One gear on the chat chrome opens a small panel. Do not put five toggles on the bar itself. Every control is a toggle.
-
-Persistence uses the League client’s `localStorage` under a namespaced key (for example `blc-settings`). On load, merge saved values over the defaults so an update that adds a toggle keeps prior choices and only fills new keys. Survives plugin updates. Cleared if the user uninstalls League or wipes client storage — acceptable. Do not write settings through `context.fs`.
-
-- [ ] Gear control that opens / closes the options panel
-- [ ] **Taller chat window** — current scoreboard stretch. Off leaves Riot’s height.
-- [ ] **Replace player names with champion names** — current default on. Off shows the Riot ID (`Name#TAG`).
-- [ ] **Show champion icons** next to chat names.
-- [ ] **Colored message bodies** — tint ally / enemy / your `.message` text. Off leaves Riot’s body color (names can stay team-colored).
-- [ ] **Custom colors** — pick name and body colors (ally / enemy / you). Defaults are the current CSS variables.
-- [ ] **Stronger not-in-chat dim** — current scoreboard splash + gap-icon fade/grayscale. Off leaves Riot’s `opacity: .5` only.
-- [ ] **Automatically open chat** — current keep-open behavior on the scoreboard. Off leaves Riot’s click-outside collapse.
 - [ ] **Automatically focus chat** — put the caret in the input when chat opens. Do not use `textarea.focus()` until a capture shows a way that does not scroll the whole client.
-- [ ] Load / save the toggle set via `localStorage` (merge with defaults on load)
-- [x] **Check for updates** — above the Riot disclaimer. Compares `VERSION` to the latest GitHub release and links to it when a newer one is published. The standalone app / installer copies the new files.
-- [ ] **Report a bug** — link in the options menu, next to the update check. Opens a form so the reporter does not need a GitHub account. Prefill the plugin version. If the client blocks the new window, show the URL the same way the release link does.
+- [ ] **Report a bug** — link in the options menu, next to the update check. Github Issues?
 
 ### Pre-game chat
 Not started. Post-game was the prototype because champion mapping comes from the end-of-game stats block, which does not exist in champ select or the lobby. Pre-game needs its own room type, its own player list (picks change during select), and a DOM capture before the same toggles can apply.
 
 - [ ] Champion names, team colors, and champion icons in champ-select chat
 - [ ] Same options as post-game, once that screen’s chat DOM is captured
-
-### Readability
-- [ ] Optional timestamps on messages
-- [ ] Message spacing / readability polish
-- [ ] More robust identity mapping if eog/PUUID fields change
-
-The client plugin stays useful on its own. Do not paywall champion names, team colors, or basic readability.
 
 ### Arena
 The chat row only has `mine`, `my-team`, and `other-team`. Every opponent shares `other-team`, so Arena teams are not distinguishable from the message class. Team id has to come from the end-of-game `teams[]` block.
@@ -104,22 +61,8 @@ Free companion may include ads in its own window. Premium (subscription or one-t
 
 ## Planned — install and updates
 
-Constraints:
-
-- The Client Package runs inside the League client. It cannot raise its own permissions, and `context.fs` cannot write outside its plugin folder. Program Files is read-only from that process.
-- Pengu only loads `index.js` from its `plugins` folder. A second, writable folder is not a plugin and is not reachable through `context.fs`.
-- Updates are applied by the Standalone App (or the installer). For a Program Files install it starts a separate updater so Windows can show the elevation prompt, then asks for a League restart. One prompt per update, not from inside a game. A `%LOCALAPPDATA%` install can copy files with no prompt.
-- The user still turns Pengu on once. A League patch that breaks Pengu is fixed by Pengu's own update.
-
 - [ ] Bundle Pengu largely unchanged (portable zip, not a fork) and keep its license in the installer
 - [ ] If Pengu is already installed, use that directory. Do not install a second copy
 - [ ] If Pengu is missing, extract it to a user-writable folder (for example under `%LOCALAPPDATA%\better-lol-chat`), outside the League and Riot Client directories
 - [ ] Copy the Client Package into that Pengu `plugins` folder
 - [ ] Standalone App replaces plugin files, requesting elevation when the folder is under Program Files
-
-## Notes
-
-- Do not inject ads into the League client. Ads and premium stay in the companion window.
-- Macros stay user-initiated. Do not auto-send on game end, auto-reply, or schedule chat.
-- A public or monetized LCU product needs Riot's developer approval before release.
-- Prefer bundling Pengu largely unchanged, and keep its license with any installer.
