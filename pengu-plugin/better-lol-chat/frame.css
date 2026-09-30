@@ -27,11 +27,31 @@
   color: var(--blc-name-mine) !important;
 }
 
+.blc-champ-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.28em;
+  vertical-align: -0.15em;
+  object-fit: cover;
+  border-radius: 2px;
+  pointer-events: none;
+  flex: 0 0 auto;
+}
+
+.blc-time {
+  margin-right: 0.35em;
+  color: #9a907c;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .blc-secondary-name {
   margin-left: 0.35em;
 }
 
-.message-name .blc-secondary-name {
+.message-name .blc-secondary-name,
+.system-message .blc-secondary-name {
   opacity: 0.72;
 }
 

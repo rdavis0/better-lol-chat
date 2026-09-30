@@ -105,6 +105,9 @@ Inject sample rows into `iframe.contentDocument.querySelector('.messages')`. An 
 ### Chat line
 
 - `.message-name` is one node. Before this plugin rewrites it, the text is the Riot ID. The plugin replaces that text only when it matches a mapped alias (`Name#TAG` or the game name before `#`). A champion name already in `.message-name` is left as-is. Team color still comes from the row class.
+- With champion icons on, `.message-name` starts with `<img class="blc-champ-icon" alt="">`. The `src` is the roster portrait (`squarePortraitPath`, or `/lol-game-data/assets/v1/champion-icons/{id}.png`). Leave rows get the same image before `.blc-system-name`.
+- Champion-only labels that are not unique become `Champion · GameName`. If that game name is shared too, the label is `Champion · GameName#tag`. Summoner-and-champion mode keeps the summoner as the primary text and the champion in `.blc-secondary-name`, so it does not add the suffix.
+- Optional timestamps add `<span class="blc-time">` as the first child of `.chat-message`, and of the leave-line span. The text is a local 12-hour clock (`7:14 PM`) from the LCU `timestamp`. Chat rows match groupchat entries by body and puuid, in log order. Leave rows match `left_room` by puuid or summoner id. The toggle is off unless the user turns it on.
 - The colon is its own `<span class="message">:</span>`. The text is `:`, with no spaces inside the span. The body is a second `<span class="message">` whose text is the LCU `body`.
 - The client template leaves whitespace between those three nodes. Collapsed, that is one space before the colon and one space after it. Sample rows need those space text nodes. Without them the colon sits against the name.
 
@@ -136,14 +139,14 @@ The client sets the class on `.message-box` from `message.fromId === me.id` (min
 This plugin reclassifies each row from the eog roster (`player.ally`): match the speaker via Riot ID / leave text / unique champion name, then force `.my-team` or `.other-team`. `.mine` and celebration rows are left alone. A sample row only needs the correct class:
 
 
-| Row class     | Who          | Name color                         | Message body   |
-| ------------- | ------------ | ---------------------------------- | -------------- |
-| `.my-team`    | Allies       | `#16cae5`                          | client default |
-| `.other-team` | Enemies      | `#ff1a3e`                          | client default |
-| `.mine`       | Local player | `#16cae5` (same as allies for now) | `#348995`      |
+| Row class     | Who          | Name color | Message body |
+| ------------- | ------------ | ---------- | ------------ |
+| `.my-team`    | Allies       | `#16cae5`  | `#a1deed`    |
+| `.other-team` | Enemies      | `#ff1a3e`  | `#e7c1c8`    |
+| `.mine`       | Local player | `#fabe0a`  | `#bfb9a5`    |
 
 
-Colors live as CSS variables on the iframe `:root` in `frame.css` (`--blc-name-ally`, `--blc-name-enemy`, `--blc-name-mine`, `--blc-message-mine`, `--blc-leave-name`, `--blc-celebration`). Class hooks stay even when a role uses the client default, so a later settings panel can assign colors without new selectors.
+Colors live as CSS variables on the iframe `:root` in `frame.css` (`--blc-name-ally`, `--blc-name-enemy`, `--blc-name-mine`, `--blc-message-ally`, `--blc-message-enemy`, `--blc-message-mine`, `--blc-leave-name`, `--blc-celebration`). Body colors apply while `.blc-tint-bodies` is on the iframe root. The options panel can change every name and body color.
 
 Leave-row `.blc-system-name` inherits the system gray (`--blc-leave-name: inherit`). Celebration text uses `--blc-celebration` (`#a3862e`).
 
@@ -151,9 +154,9 @@ LCU `groupchat` messages in the 2026-09-23 capture use `fromSummonerId: 0`. `fro
 
 ### Credit
 
-`#blc-credit` is appended to the iframe `<html>`, not inside the scrolling message list. It is `position: fixed` at the top of the frame so it does not scroll away. Text comes from `CREDIT_TEXT` in `index.js` (currently `better-lol-chat 0.1 by wryguy`). Gold `#ffd700` on `#0e0638`. Font family, size, and line-height are copied from a `.chat-message` / `.message` node. Class `blc-credit-hidden` hides it when chat is minimized (`focused-chat-box` absent, or our collapse flag).
+`#blc-credit` is appended to the iframe `<html>`, not inside the scrolling message list. It is `position: fixed` at the top of the frame so it does not scroll away. Text comes from `CREDIT_TEXT` in `index.js` (currently `better-lol-chat by wryguy`). Gold `#ffd700` on `#0e0638`. Font family, size, and line-height are copied from a `.chat-message` / `.message` node. Class `blc-credit-hidden` hides it when chat is minimized (`focused-chat-box` absent, or our collapse flag). The gear on that line opens `#blc-options` on the host page.
 
-Plugin version is the single `VERSION` constant in `index.js`. It is shown in the credit line and logged once on `load()` as `[better-lol-chat] v0.1`.
+Plugin version is the single `VERSION` constant in `index.js` (`0.3`). It is logged once on `load()` as `[better-lol-chat] v0.3` and shown in the options panel.
 
 ## Identity
 
@@ -197,7 +200,7 @@ The KDA column (`.INDIVIDUAL_KDA` / `.scoreboard-row-stat-line-primary`) is the 
 
 `.blc-row-champ` is an absolutely positioned image centered between the last `.postgame-player-item` and `.INDIVIDUAL_KDA`. The items container is a fixed 235px box with the slots packed left, so that empty space is inside the container, flush with the KDA column. Its size matches the primary keystone holder (`.postgame-player-keystone-icon.circle-icon-holder`, 30px at the default client scale). It is recentered on the 250ms tick and on window `resize`. `pointer-events: none` so item tooltips still work.
 
-Do not insert the icon as a flex child. That shifts the row.
+Do not insert the icon as a flex child. That shifts the row. If two scoreboard rows share a champion, the icon is placed only when the row's summoner name matches one player. A champion-name-only match that hits more than one player is skipped.
 
 ## Plugin entry
 

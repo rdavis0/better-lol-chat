@@ -2,7 +2,7 @@
 
 Unofficial post-game chat improvements. One product name, two packages:
 
-- **Client Package** — Pengu plugin that changes Riot's existing screen. Source folder is still `pengu-plugin/better-postgame-chat/` until that directory is renamed.
+- **Client Package** — Pengu plugin that changes Riot's existing screen. Source folder: `pengu-plugin/better-lol-chat/`.
 - **Standalone App** — separate window. Same name. "Plus" stays the premium tier inside this app, not a second product name.
 
 Status tracks implementation.
@@ -16,9 +16,16 @@ Status tracks implementation.
 - [x] Keep “left the lobby” rows, with the champion name colored by team and the rest of the line gray
 - [x] Keep chat open on click-outside / blur (vs vanilla collapse)
 - [x] Repurpose `.chat-toggle-button` to collapse/expand the full chat window
-- [x] Local gold credit line when post-game chat loads: `better-lol-chat {VERSION} by wryguy`
-- [x] Plugin version constant (`VERSION` in `index.js`); credit line + one console log on load
+- [x] Local gold credit line when post-game chat loads: `better-lol-chat by wryguy`
+- [x] Plugin version constant (`VERSION` in `index.js`); logged once on load, and shown in the options panel
 - [x] Champion icons in the scoreboard gap between items and the KDA column
+- [x] Options gear on the credit line. Toggles and colors persist in `localStorage` under `blc-settings` (merge with defaults on load)
+- [x] Large chat window, stronger inactive-player dim, and automatically open chat
+- [x] Name style: summoner names, champion names, or both
+- [x] Champion icons next to chat names (and on leave lines)
+- [x] Colored message bodies, with separate name and body colors for ally / enemy / you
+- [x] Optional message timestamps from the post-game conversation log
+- [x] Same-champion labels: a repeated champion keeps its own player, and the chat label gains that player's game name so the two copies are not identical. Scoreboard icons are not chosen from an ambiguous champion name
 
 ## Planned — client (Pengu)
 
@@ -27,16 +34,17 @@ One gear on the chat chrome opens a small panel. Do not put five toggles on the 
 
 Persistence uses the League client’s `localStorage` under a namespaced key (for example `blc-settings`). On load, merge saved values over the defaults so an update that adds a toggle keeps prior choices and only fills new keys. Survives plugin updates. Cleared if the user uninstalls League or wipes client storage — acceptable. Do not write settings through `context.fs`.
 
-- [ ] Gear control that opens / closes the options panel
-- [ ] **Taller chat window** — current scoreboard stretch. Off leaves Riot’s height.
-- [ ] **Replace player names with champion names** — current default on. Off shows the Riot ID (`Name#TAG`).
-- [ ] **Show champion icons** next to chat names.
-- [ ] **Colored message bodies** — tint ally / enemy / your `.message` text. Off leaves Riot’s body color (names can stay team-colored).
-- [ ] **Custom colors** — pick name and body colors (ally / enemy / you). Defaults are the current CSS variables.
-- [ ] **Stronger not-in-chat dim** — current scoreboard splash + gap-icon fade/grayscale. Off leaves Riot’s `opacity: .5` only.
-- [ ] **Automatically open chat** — current keep-open behavior on the scoreboard. Off leaves Riot’s click-outside collapse.
+- [x] Gear control that opens / closes the options panel
+- [x] **Taller chat window** — current scoreboard stretch. Off leaves Riot’s height.
+- [x] **Name style** — summoner names, champion names, or both. Champion names are the default.
+- [x] **Show champion icons** next to chat names. On by default.
+- [x] **Colored message bodies** — tint ally / enemy / your `.message` text. Off leaves Riot’s body color (names can stay team-colored).
+- [x] **Custom colors** — pick name and body colors (ally / enemy / you). Defaults are the current CSS variables.
+- [x] **Stronger not-in-chat dim** — current scoreboard splash + gap-icon fade/grayscale. Off leaves Riot’s `opacity: .5` only.
+- [x] **Automatically open chat** — current keep-open behavior on the scoreboard. Off leaves Riot’s click-outside collapse.
 - [ ] **Automatically focus chat** — put the caret in the input when chat opens. Do not use `textarea.focus()` until a capture shows a way that does not scroll the whole client.
-- [ ] Load / save the toggle set via `localStorage` (merge with defaults on load)
+- [x] Load / save the toggle set via `localStorage` (merge with defaults on load)
+- [x] **Message timestamps** — optional, off by default. Chat lines match the LCU log by body and puuid. Leave lines match by puuid or summoner id.
 - [x] **Check for updates** — above the Riot disclaimer. Compares `VERSION` to the latest GitHub release and links to it when a newer one is published. The standalone app / installer copies the new files.
 - [ ] **Report a bug** — link in the options menu, next to the update check. Opens a form so the reporter does not need a GitHub account. Prefill the plugin version. If the client blocks the new window, show the URL the same way the release link does.
 
@@ -47,7 +55,7 @@ Not started. Post-game was the prototype because champion mapping comes from the
 - [ ] Same options as post-game, once that screen’s chat DOM is captured
 
 ### Readability
-- [ ] Optional timestamps on messages
+- [x] Optional timestamps on messages
 - [ ] Message spacing / readability polish
 - [ ] More robust identity mapping if eog/PUUID fields change
 
@@ -62,8 +70,8 @@ The chat row only has `mine`, `my-team`, and `other-team`. Every opponent shares
   Mark each team on the Arena scoreboard with that same color.
 
 ### Same champion
-- [ ] **Champion ditto**
-  When one champion appears more than once (One for All, Arena duplicates, blind-pick mirrors), keep players mapped by puuid and summoner id. Disambiguate the chat label so two copies are not shown as the same person. Scoreboard icons must follow the player, not the champion name alone.
+- [x] **Champion ditto**
+  When one champion appears more than once (One for All, Arena duplicates, blind-pick mirrors), players stay mapped by puuid and summoner id. Champion-only labels become `Champion · GameName` (and `#tag` when the game name also collides). Scoreboard icons follow the summoner name, and are skipped when the only clue is an ambiguous champion name.
 
 ## Planned — companion app
 

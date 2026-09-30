@@ -1,9 +1,10 @@
 import './style.css';
 import frameCss from './frame.css?raw';
+import { buildMessageLog, championLabel, takeChatStamp, takeLeaveStamp } from './labels.js';
 import { mountUpdateStatus } from './update.js';
 
 const LOG = '[better-lol-chat]';
-const VERSION = '0.2';
+const VERSION = '0.3';
 const CREDIT_TEXT = `better-lol-chat by wryguy`;
 const JOIN_TEXT = /joined(\s+the)?\s+(room|lobby)/i;
 const POSTGAME_PHASES = new Set([
@@ -64,6 +65,7 @@ const TOGGLES = [
   ['tallerChat', 'Large chat window'],
   ['strongDim', 'Stronger inactive player dim'],
   ['autoOpen', 'Automatically open chat'],
+  ['showTimestamps', 'Message timestamps'],
 ];
 
 const NAME_CHOICES = [
@@ -97,6 +99,11 @@ const PAINT_PROPS = [
 ];
 
 let settings = loadSettings();
+let postGameConversationId = null;
+let messageLog = [];
+let lastMessageFetch = 0;
+let lastMapLog = '';
+let identityGen = 0;
 const chromeToken = String(Math.random());
 applyHostSettings();
 
@@ -161,7 +168,11 @@ export function load() {
   });
 
   setInterval(() => {
-    if (inPostGame) ensureOpen();
+    if (!inPostGame) return;
+    ensureOpen();
+    if (!settings.showTimestamps) return;
+    if (Date.now() - lastMessageFetch < 3000) return;
+    refreshMessageLog().catch((err) => console.warn(LOG, err));
   }, 250);
 
   window.addEventListener('resize', () => {
@@ -184,6 +195,9 @@ function onPhase(phase) {
     bySummonerId.clear();
     nameIndex = [];
     roster = [];
+    postGameConversationId = null;
+    messageLog = [];
+    lastMapLog = '';
     clearScoreboardIcons();
     closeOptions();
     if (collapseTipVisible) dismissCollapseTip();
@@ -215,12 +229,15 @@ async function lcu(path) {
 }
 
 async function refreshIdentities() {
+  const gen = ++identityGen;
+  lastMessageFetch = Date.now();
   const [me, eog, champs, conversations] = await Promise.all([
     lcu('/lol-summoner/v1/current-summoner'),
     lcu('/lol-end-of-game/v1/eog-stats-block'),
     lcu('/lol-game-data/assets/v1/champion-summary.json'),
     lcu('/lol-chat/v1/conversations'),
   ]);
+  if (gen !== identityGen) return;
 
   const champNames = new Map();
   const champIcons = new Map();
@@ -231,7 +248,7 @@ async function refreshIdentities() {
     if (c.squarePortraitPath) champIcons.set(id, c.squarePortraitPath);
   }
 
-  const players = collectPlayers(eog, me, champNames, champIcons);
+  const players = dedupePlayers(collectPlayers(eog, me, champNames, champIcons));
   roster = players;
   byPuuid.clear();
   bySummonerId.clear();
@@ -248,18 +265,42 @@ async function refreshIdentities() {
   }
 
   const postGame = (conversations || []).find((c) => c?.type === 'postGame');
-  const postGameConversationId = postGame?.id || postGame?.pid || null;
-
-  if (postGameConversationId) {
-    const messages = await lcu(
-      `/lol-chat/v1/conversations/${encodeURIComponent(postGameConversationId)}/messages`,
-    );
-    applyJoinRoomMapping(messages || []);
-  }
+  postGameConversationId = postGame?.id || postGame?.pid || null;
 
   aliases.sort((a, b) => b.name.length - a.name.length);
   nameIndex = aliases;
-  console.log(LOG, 'mapped', players.length, 'players', { conversation: postGameConversationId });
+  const mapLog = `${players.length}:${postGameConversationId || ''}`;
+  if (mapLog !== lastMapLog) {
+    lastMapLog = mapLog;
+    console.log(LOG, 'mapped', players.length, 'players', { conversation: postGameConversationId });
+  }
+
+  let messages = [];
+  if (postGameConversationId) {
+    messages = (await lcu(
+      `/lol-chat/v1/conversations/${encodeURIComponent(postGameConversationId)}/messages`,
+    )) || [];
+    if (gen !== identityGen) return;
+    applyJoinRoomMapping(messages);
+  }
+  if (gen !== identityGen) return;
+  messageLog = buildMessageLog(messages);
+}
+
+async function refreshMessageLog() {
+  if (!postGameConversationId) {
+    await refreshIdentities();
+    scheduleEnhance();
+    return;
+  }
+  const gen = ++identityGen;
+  const id = postGameConversationId;
+  lastMessageFetch = Date.now();
+  const messages = (await lcu(`/lol-chat/v1/conversations/${encodeURIComponent(id)}/messages`)) || [];
+  if (gen !== identityGen) return;
+  applyJoinRoomMapping(messages);
+  messageLog = buildMessageLog(messages);
+  scheduleEnhance();
 }
 
 function collectPlayers(eog, me, champNames, champIcons) {
@@ -276,6 +317,8 @@ function collectPlayers(eog, me, champNames, champIcons) {
       raw.championName ||
       (raw.skinName ? String(raw.skinName) : null) ||
       'Unknown';
+    const gameName = String(raw.riotIdGameName || raw.gameName || raw.summonerName || '').trim();
+    const tagLine = String(raw.riotIdTagLine || raw.tagLine || '').trim();
     const iconPath =
       champIcons.get(championId) ||
       (championId ? `/lol-game-data/assets/v1/champion-icons/${championId}.png` : '');
@@ -295,6 +338,8 @@ function collectPlayers(eog, me, champNames, champIcons) {
       summonerId: raw.summonerId ?? raw.userId ?? null,
       teamId: teamId ?? raw.teamId ?? null,
       championName,
+      gameName,
+      tagLine,
       iconPath,
       ally: allyHint,
       aliases,
@@ -329,6 +374,24 @@ function collectPlayers(eog, me, champNames, champIcons) {
   }
 
   return list;
+}
+
+function dedupePlayers(list) {
+  const out = [];
+  const seen = new Set();
+  for (const player of list) {
+    const key = player.puuid
+      ? `p:${player.puuid}`
+      : player.summonerId != null && Number(player.summonerId) !== 0
+        ? `s:${player.summonerId}`
+        : '';
+    if (key) {
+      if (seen.has(key)) continue;
+      seen.add(key);
+    }
+    out.push(player);
+  }
+  return out;
 }
 
 function applyJoinRoomMapping(messages) {
@@ -566,7 +629,8 @@ function playerForRow(row) {
     .trim()
     .toLowerCase();
   if (!champ) return null;
-  return roster.find((p) => p.championName && p.championName.toLowerCase() === champ && p.iconPath) || null;
+  const hits = roster.filter((p) => p.championName && p.championName.toLowerCase() === champ && p.iconPath);
+  return hits.length === 1 ? hits[0] : null;
 }
 
 function statAfterItems(row, anchorRight) {
@@ -1097,6 +1161,7 @@ function enhance() {
       rewriteNames(doc);
       rewriteLobbyMessages(doc);
       fixTeamClasses(doc);
+      applyTimestamps(doc);
       syncCredit(room);
     }
   } catch (err) {
@@ -1207,6 +1272,8 @@ function loadSettings() {
     showSummonerNames: false,
     showChampionNames: true,
     nameStyle: 'champion',
+    showChatIcons: true,
+    showTimestamps: false,
     coloredBodies: true,
     strongDim: true,
     autoOpen: true,
@@ -1219,6 +1286,7 @@ function loadSettings() {
       if (typeof saved[key] === 'boolean') next[key] = saved[key];
     }
     if (typeof saved.coloredBodies === 'boolean') next.coloredBodies = saved.coloredBodies;
+    if (typeof saved.showChatIcons === 'boolean') next.showChatIcons = saved.showChatIcons;
     if (saved.nameStyle === 'summoner' || saved.nameStyle === 'champion' || saved.nameStyle === 'both') {
       applyNameStyle(saved.nameStyle, next);
     } else {
@@ -1277,6 +1345,9 @@ function commitSettings() {
   if (doc) applyFrameSettings(doc);
   scheduleEnhance();
   ensureOpen();
+  if (settings.showTimestamps && inPostGame) {
+    refreshMessageLog().catch((err) => console.warn(LOG, err));
+  }
 }
 
 function hasPaint(cs) {
@@ -1544,6 +1615,7 @@ function ensureOptionsPanel() {
 
   appendHeading(body, document, 'Name style');
   appendNameChoices(body, document);
+  appendToggle(body, document, 'showChatIcons', 'Champion icons');
   const resetPaint = findResetPaint();
   for (const field of COLOR_FIELDS) {
     if (field.group !== 'Names') continue;
@@ -1706,31 +1778,75 @@ function summonerLabel(originalText) {
   return stripBidi(originalText).replace(/\s+/g, ' ').trim();
 }
 
-function paintChatName(el, original, champ) {
-  if (!settings.showChampionNames || !champ) {
-    if (stripBidi(el.textContent) !== stripBidi(original)) el.textContent = original;
-    return;
+function significantChildren(el) {
+  return [...el.childNodes].filter((node) => !(node.nodeType === 1 && node.classList.contains('blc-time')));
+}
+
+function partsMatch(el, parts) {
+  const nodes = significantChildren(el);
+  if (nodes.length !== parts.length) return false;
+  for (let i = 0; i < parts.length; i++) {
+    const node = nodes[i];
+    const part = parts[i];
+    if (part.icon) {
+      if (node.nodeType !== 1 || !node.classList.contains('blc-champ-icon')) return false;
+      if (node.dataset.blcSrc !== part.icon) return false;
+      continue;
+    }
+    if (part.className) {
+      if (node.nodeType !== 1 || !node.classList.contains(part.className)) return false;
+      if (node.textContent !== part.text) return false;
+      continue;
+    }
+    if (node.nodeType !== 3 || node.textContent !== part.text) return false;
   }
-  if (!settings.showSummonerNames) {
-    if (el.childElementCount || el.textContent !== champ) el.textContent = champ;
-    return;
+  return true;
+}
+
+function renderParts(doc, parts) {
+  return parts.map((part) => {
+    if (part.icon) {
+      const img = doc.createElement('img');
+      img.className = 'blc-champ-icon';
+      img.alt = '';
+      img.draggable = false;
+      img.dataset.blcSrc = part.icon;
+      img.src = part.icon;
+      return img;
+    }
+    if (part.className) {
+      const span = doc.createElement('span');
+      span.className = part.className;
+      span.textContent = part.text;
+      return span;
+    }
+    return doc.createTextNode(part.text);
+  });
+}
+
+function paintParts(el, parts) {
+  if (partsMatch(el, parts)) return;
+  const time = el.querySelector(':scope > .blc-time');
+  el.replaceChildren(...(time ? [time] : []), ...renderParts(el.ownerDocument, parts));
+}
+
+function iconPart(player) {
+  return settings.showChatIcons && player?.iconPath ? { icon: player.iconPath } : null;
+}
+
+function paintChatName(el, original, player) {
+  const parts = [];
+  const icon = iconPart(player);
+  if (icon) parts.push(icon);
+  if (!settings.showChampionNames || !player?.championName) {
+    parts.push({ text: original });
+  } else if (!settings.showSummonerNames) {
+    parts.push({ text: championLabel(player, roster) });
+  } else {
+    parts.push({ text: summonerLabel(original) });
+    parts.push({ className: 'blc-secondary-name', text: `(${player.championName})` });
   }
-  const summoner = summonerLabel(original);
-  const champNote = `(${champ})`;
-  const extra = el.querySelector(':scope > .blc-secondary-name');
-  if (
-    el.childNodes.length === 2 &&
-    el.firstChild?.nodeType === 3 &&
-    el.firstChild.textContent === summoner &&
-    extra?.textContent === champNote
-  ) {
-    return;
-  }
-  const doc = el.ownerDocument;
-  const span = doc.createElement('span');
-  span.className = 'blc-secondary-name';
-  span.textContent = champNote;
-  el.replaceChildren(doc.createTextNode(summoner), span);
+  paintParts(el, parts);
 }
 
 function rewriteNames(root) {
@@ -1738,19 +1854,19 @@ function rewriteNames(root) {
   for (const el of nameNodes) {
     if (el.closest?.('.system-message')) continue;
     let original = el.dataset.blcOriginal;
-    let champ = '';
+    let player = null;
     if (original != null) {
-      champ = resolvePlayer(stripBidi(original).trim())?.championName || '';
+      player = resolvePlayer(stripBidi(original).trim());
     } else if (nameIndex.length) {
       const match = matchAlias(stripBidi(el.textContent || '').trim());
       if (!match) continue;
       original = el.textContent;
       el.dataset.blcOriginal = original;
-      champ = match.player.championName || '';
+      player = match.player;
     } else {
       continue;
     }
-    paintChatName(el, original, champ);
+    paintChatName(el, original, player);
   }
 }
 
@@ -1826,50 +1942,23 @@ function resolvePlayer(text) {
   return hit;
 }
 
-function paintLeaveName(span, original, champ, verb, summonerName) {
-  if (!settings.showChampionNames || !champ) {
-    if (stripBidi(span.textContent) !== stripBidi(original)) span.textContent = original;
+function paintLeaveName(span, original, player, verb, summonerName) {
+  const parts = [];
+  const icon = iconPart(player);
+  if (icon) parts.push(icon);
+  if (!settings.showChampionNames || !player?.championName) {
+    parts.push({ text: original });
+    paintParts(span, parts);
     return;
   }
-  const doc = span.ownerDocument;
-  const nameEl = span.querySelector(':scope > .blc-system-name');
   if (!settings.showSummonerNames) {
-    const tail = span.childNodes[1];
-    if (
-      nameEl?.textContent === champ &&
-      !span.querySelector(':scope > .blc-secondary-name') &&
-      span.childNodes.length === 2 &&
-      tail?.nodeType === 3 &&
-      tail.textContent === ` ${verb}`
-    ) {
-      return;
-    }
-    const name = doc.createElement('span');
-    name.className = 'blc-system-name';
-    name.textContent = champ;
-    span.replaceChildren(name, doc.createTextNode(` ${verb}`));
-    return;
+    parts.push({ className: 'blc-system-name', text: championLabel(player, roster) });
+  } else {
+    parts.push({ className: 'blc-system-name', text: summonerLabel(summonerName) });
+    parts.push({ className: 'blc-secondary-name', text: `(${player.championName})` });
   }
-  const summoner = summonerLabel(summonerName);
-  const champNote = `(${champ})`;
-  const extra = span.querySelector(':scope > .blc-secondary-name');
-  const tail = span.childNodes[2];
-  if (
-    nameEl?.textContent === summoner &&
-    extra?.textContent === champNote &&
-    span.childNodes.length === 3 &&
-    tail?.nodeType === 3 &&
-    tail.textContent === ` ${verb}`
-  ) {
-    return;
-  }
-  const name = doc.createElement('span');
-  name.className = 'blc-system-name';
-  name.textContent = summoner;
-  const champEl = doc.createElement('span');
-  champEl.className = 'blc-secondary-name';
-  champEl.textContent = champNote;
-  span.replaceChildren(name, champEl, doc.createTextNode(` ${verb}`));
+  parts.push({ text: ` ${verb}` });
+  paintParts(span, parts);
 }
 
 function rewriteLobbyMessages(root) {
@@ -1890,7 +1979,7 @@ function rewriteLobbyMessages(root) {
     }
 
     let original = span.dataset.blcOriginal;
-    let champ = '';
+    let player = null;
     let verb = '';
     let summonerName = '';
     if (original != null) {
@@ -1899,19 +1988,71 @@ function rewriteLobbyMessages(root) {
       if (!storedLeave) continue;
       verb = storedLeave[2];
       summonerName = storedLeave[1].trim();
-      champ = matchAlias(summonerName)?.player.championName || '';
+      player = resolvePlayer(summonerName);
     } else {
       const leave = text.match(LEAVE_TEXT);
       if (!leave) continue;
-      if (!matchAlias(leave[1].trim())) continue;
+      player = resolvePlayer(leave[1].trim());
+      if (!player) continue;
       original = span.textContent;
       span.dataset.blcOriginal = original;
       verb = leave[2];
       summonerName = leave[1].trim();
-      champ = matchAlias(summonerName)?.player.championName || '';
     }
     box?.classList.remove('blc-hide-join');
-    paintLeaveName(span, original, champ, verb, summonerName);
+    paintLeaveName(span, original, player, verb, summonerName);
+  }
+}
+
+function chatBodyText(box) {
+  const nodes = box.querySelectorAll('.chat-message > span.message');
+  if (nodes.length >= 2) return nodes[nodes.length - 1].textContent ?? '';
+  if (nodes.length === 1 && stripBidi(nodes[0].textContent).trim() !== ':') return nodes[0].textContent ?? '';
+  return '';
+}
+
+function paintTime(el, time) {
+  const existing = [...el.children].find((node) => node.classList.contains('blc-time'));
+  if (!settings.showTimestamps || !time) {
+    existing?.remove();
+    return;
+  }
+  if (existing?.textContent === time) {
+    if (el.firstChild !== existing) el.insertBefore(existing, el.firstChild);
+    return;
+  }
+  const span = existing || el.ownerDocument.createElement('span');
+  span.className = 'blc-time';
+  span.textContent = time;
+  if (el.firstChild !== span) el.insertBefore(span, el.firstChild);
+}
+
+function applyTimestamps(doc) {
+  const boxes = doc.querySelectorAll?.('.message-box') || [];
+  const used = new Set();
+  for (const box of boxes) {
+    if (box.classList.contains('blc-sample')) continue;
+    const chat = box.querySelector('.chat-message');
+    if (chat && !box.querySelector('.system-message')) {
+      const nameEl = chat.querySelector('.message-name');
+      const source = nameEl?.dataset.blcOriginal ?? nameEl?.textContent;
+      const player = resolvePlayer(stripBidi(source || '').trim());
+      const time = settings.showTimestamps
+        ? takeChatStamp(messageLog, used, chatBodyText(box), player?.puuid)
+        : '';
+      paintTime(chat, time);
+      continue;
+    }
+    const span = box.querySelector('.system-message > span');
+    if (!span || span.classList.contains('celebration')) continue;
+    const stored = stripBidi(span.dataset.blcOriginal || span.textContent || '').replace(/\s+/g, ' ').trim();
+    const isLeave = LEAVE_TEXT.test(stored) || !!span.querySelector('.blc-system-name');
+    if (!isLeave) {
+      paintTime(span, '');
+      continue;
+    }
+    const time = settings.showTimestamps ? takeLeaveStamp(messageLog, used, speakerForBox(box)) : '';
+    paintTime(span, time);
   }
 }
 
