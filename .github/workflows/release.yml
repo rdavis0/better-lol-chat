@@ -11,7 +11,7 @@ jobs:
   plugin-zip:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.release.tag_name }}
 
@@ -20,7 +20,7 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           tag="${RELEASE_TAG#v}"
-          version="$(sed -n "s/const VERSION = '\\([^']*\\)'/\\1/p" pengu-plugin/better-lol-chat/index.js)"
+          version="$(awk -F"'" '/^const VERSION = / { print $2; exit }' pengu-plugin/better-lol-chat/index.js | tr -d '\r')"
           if [ "$tag" != "$version" ]; then
             echo "Release tag ${RELEASE_TAG} does not match VERSION ${version}"
             exit 1
