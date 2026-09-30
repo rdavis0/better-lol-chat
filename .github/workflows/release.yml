@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  plugin-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Check the tag matches VERSION
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          tag="${RELEASE_TAG#v}"
+          version="$(sed -n "s/const VERSION = '\\([^']*\\)'/\\1/p" pengu-plugin/better-lol-chat/index.js)"
+          if [ "$tag" != "$version" ]; then
+            echo "Release tag ${RELEASE_TAG} does not match VERSION ${version}"
+            exit 1
+          fi
+
+      - name: Zip the plugin folder
+        run: |
+          cd pengu-plugin
+          zip -r "$RUNNER_TEMP/better-lol-chat.zip" better-lol-chat
+
+      - name: Attach the zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/better-lol-chat.zip" --clobber
