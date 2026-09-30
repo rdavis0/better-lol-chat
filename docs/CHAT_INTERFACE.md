@@ -41,7 +41,7 @@ Post-game phases are `WaitingForStats`, `PreEndOfGame`, and `EndOfGame`.
 
 Chat is forced open only when a `.scoreboard-team-container` is actually on screen (Scoreboard tab). On Progression that element is not showing, so the plugin leaves vanilla collapse alone. Switching back to Progression clears `focused-chat-box` once, then stops managing it.
 
-While open on the scoreboard, the room is stretched with `blc-stretched`. Its top lines up with the top of `.scoreboard-header-component.is-player-team`. Width and bottom stay where vanilla put them. Each visible `.scoreboard-header-component` gets a leading flex child, `.blc-header-chat-gutter`, set to the chat window's width. `.scoreboard-header-team-name` then has a 5px left margin. While shifted, `.scoreboard-header-content` drops Riot's fixed 500px width (inline, so it wins) and shrinks to its text. The header's own spacer absorbs that width, so `.scoreboard-column-icons-container` stays put. The iframe fills the height above the input. Numbers are measured, not hardcoded, and recomputed on resize.
+While open on the scoreboard, the room is stretched with `blc-stretched`. Its top lines up with the top of `.scoreboard-header-component.is-player-team`. Width and bottom stay where vanilla put them. Each visible `.scoreboard-header-component` gets a leading flex child, `.blc-header-chat-gutter`, whose right edge lines up with the chat window. `.scoreboard-header-team-name` then has a 5px left margin. While shifted, `.scoreboard-header-content` drops Riot's fixed 500px width (inline, so it wins) and shrinks to its text. The header's own spacer absorbs that width, so `.scoreboard-column-icons-container` stays put. The iframe fills the height above the input. Numbers are measured, not hardcoded, and recomputed on resize.
 
 ## Messages iframe
 
@@ -151,9 +151,9 @@ LCU `groupchat` messages in the 2026-09-23 capture use `fromSummonerId: 0`. `fro
 
 ### Credit
 
-`#blc-credit` is appended to the iframe `<html>`, not inside the scrolling message list. It is `position: fixed` at the top of the frame so it does not scroll away. Text comes from `CREDIT_TEXT` in `index.js` (currently `better-lol-chat 0.1 by wryguy`). Gold `#ffd700` on `#0e0638`. Font family, size, and line-height are copied from a `.chat-message` / `.message` node. Class `blc-credit-hidden` hides it when chat is minimized (`focused-chat-box` absent, or our collapse flag).
+`#blc-credit` is appended to the iframe `<html>`, not inside the scrolling message list. It is `position: fixed` at the top of the frame so it does not scroll away. Text comes from `CREDIT_TEXT` in `index.js` (currently `better-lol-chat by wryguy`). Gold `#ffd700` on `#0e0638`. Font family, size, and line-height are copied from a `.chat-message` / `.message` node. Class `blc-credit-hidden` hides it when chat is minimized (`focused-chat-box` absent, or our collapse flag).
 
-Plugin version is the single `VERSION` constant in `index.js`. It is shown in the credit line and logged once on `load()` as `[better-lol-chat] v0.1`.
+Plugin version is the single `VERSION` constant in `index.js` (`X.X`). It is logged once on `load()` as `[better-lol-chat] vX.X` and shown on the update row in the options panel.
 
 ## Identity
 
