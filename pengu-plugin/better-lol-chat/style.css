@@ -1,5 +1,4 @@
-lol-social-chat-room[type='postGame'].blc-messages-unlocked.focused-chat-box:not(.blc-collapsed) .chat-placeholder-text,
-lol-social-chat-room[type='postGame'].blc-messages-unlocked:not(.blc-collapsed) .focused-chat-box .chat-placeholder-text {
+lol-social-chat-room[type='postGame'].blc-messages-unlocked.focused-chat-box:not(.blc-collapsed) .chat-placeholder-text {
   display: none !important;
 }
 
@@ -53,17 +52,36 @@ lol-social-chat-room[type='postGame'] .shadow-effect {
   box-shadow: none !important;
 }
 
-.blc-row-champ {
-  position: absolute;
+.blc-mid-row {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  flex: 0 0 auto;
+  gap: 6px;
+  margin: 0 0 0 8px;
   pointer-events: none;
+}
+
+.blc-mid-row-level {
+  flex: 0 0 auto;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  opacity: 1;
+}
+
+.blc-mid-row-icon {
+  display: block;
+  flex: 0 0 auto;
   object-fit: cover;
   border-radius: 2px;
 }
 
-/* Riot dims the not-in-chat splash to 0.5. Match that on our champ icons. */
-.scoreboard-row-component.not-in-chat > .blc-row-champ,
-.strawberry-scoreboard-row-component.not-in-chat > .blc-row-champ,
-.jade-scoreboard-row-component.not-in-chat > .blc-row-champ {
+/* Riot dims the not-in-chat splash to 0.5. Match that on the mid-row icon. The level stays full color. */
+.scoreboard-row-component.not-in-chat .blc-mid-row-icon,
+.strawberry-scoreboard-row-component.not-in-chat .blc-mid-row-icon,
+.jade-scoreboard-row-component.not-in-chat .blc-mid-row-icon {
   opacity: 0.5;
 }
 
@@ -77,9 +95,9 @@ html.blc-strong-dim .scoreboard-row-component.not-in-chat
 html.blc-strong-dim .scoreboard-row-component.not-in-chat
   .scoreboard-row-player-details-container
   .scoreboard-row-skin-background-jade,
-html.blc-strong-dim .scoreboard-row-component.not-in-chat > .blc-row-champ,
-html.blc-strong-dim .strawberry-scoreboard-row-component.not-in-chat > .blc-row-champ,
-html.blc-strong-dim .jade-scoreboard-row-component.not-in-chat > .blc-row-champ {
+html.blc-strong-dim .scoreboard-row-component.not-in-chat .blc-mid-row-icon,
+html.blc-strong-dim .strawberry-scoreboard-row-component.not-in-chat .blc-mid-row-icon,
+html.blc-strong-dim .jade-scoreboard-row-component.not-in-chat .blc-mid-row-icon {
   opacity: 0.5;
   filter: grayscale(0.75);
 }

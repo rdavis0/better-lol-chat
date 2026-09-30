@@ -27,9 +27,10 @@ lol-social-chat-room[type="postGame"].scoreboard-v2
         .chat-placeholder-text        "Click or Enter to View" when collapsed
 ```
 
-- `focused-chat-box` on `.chat-box` is vanilla’s open state. Removing it is the unfocused peek: a few recent lines, older lines clipped, background fading upward.
-- The plugin keeps that class on while the Scoreboard tab is showing, so click-outside and blur do not collapse chat. It does this by rewriting the class only. It freezes `scrollTop` / `scrollLeft` around those writes.
-- `.chat-toggle-button` is intercepted. Toggle-off removes `focused-chat-box` (vanilla peek). Toggle-on puts it back. Clicking the text field while collapsed also opens chat. The native input is kept.
+- Open means `focused-chat-box` on `lol-social-chat-room`. Blur removes that class from the room. `.chat-box` can keep `focused-chat-box` after that. The unfocused peek is a few recent lines, older lines clipped, background fading upward.
+- Sticky chat (on by default) keeps that room class on while the Scoreboard tab is showing, so click-outside and blur do not collapse chat. The plugin rewrites the class only, and freezes `scrollTop` / `scrollLeft` around those writes. The X on the credit line, the chat button, and Esc remove the class (vanilla peek). The X also closes the options panel when that panel is open. Esc closes the options panel first, and collapses chat only when the panel is already closed.
+- Sticky chat off leaves the room class to the client. When the class leaves, large-chat stretch is removed and the credit banner hides, so the window returns to the client's height. `#blc-options` counts as part of chat while it is open: clicks inside the panel do not collapse chat, including the click that turns sticky on. A click outside the panel and outside the chat room closes the panel and collapses chat. Once that panel has been open, the next click outside chat collapses it too, so closing the panel does not leave the room class stuck on.
+- `.chat-toggle-button` is intercepted only while sticky chat is on. Toggle-off removes `focused-chat-box` (vanilla peek). Toggle-on puts it back. Clicking the text field while collapsed also opens chat. The native input is kept. With sticky chat off, the button is the client’s control.
 - `can-hide-player-messages` is stripped so messages start visible. The room gets `blc-messages-unlocked`.
 - Our collapsed flag is `blc-collapsed` on the room plus module state `windowCollapsed`.
 
@@ -39,7 +40,9 @@ lol-social-chat-room[type="postGame"].scoreboard-v2
 
 Post-game phases are `WaitingForStats`, `PreEndOfGame`, and `EndOfGame`.
 
-Chat is forced open only when a `.scoreboard-team-container` is actually on screen (Scoreboard tab). On Progression that element is not showing, so the plugin leaves vanilla collapse alone. Switching back to Progression clears `focused-chat-box` once, then stops managing it.
+Chat is forced open only when a `.scoreboard-team-container` is actually on screen (Scoreboard tab) and Automatically open chat is on. On Progression that element is not showing, so the plugin leaves vanilla collapse alone. Switching back to Progression clears `focused-chat-box` once, then stops managing it.
+
+Sticky chat is separate from that open. On, scoreboard chat stays open until the chat button or Esc. Off, loss of focus closes it the way the client does, including after an automatic open. An open options panel is not loss of focus.
 
 While open on the scoreboard, the room is stretched with `blc-stretched`. Its top lines up with the top of `.scoreboard-header-component.is-player-team`. Width and bottom stay where vanilla put them. Each visible `.scoreboard-header-component` gets a leading flex child, `.blc-header-chat-gutter`, whose right edge lines up with the chat window. `.scoreboard-header-team-name` then has a 5px left margin. While shifted, `.scoreboard-header-content` drops Riot's fixed 500px width (inline, so it wins) and shrinks to its text. The header's own spacer absorbs that width, so `.scoreboard-column-icons-container` stays put. The iframe fills the height above the input. Numbers are measured, not hardcoded, and recomputed on resize.
 
@@ -102,9 +105,14 @@ This capture has `.mine` and `.other-team` chat lines. `.my-team` appears on joi
 
 Inject sample rows into `iframe.contentDocument.querySelector('.messages')`. An expired or disconnected session still has that node (`class="messages disconnected"`) and the frame stylesheet. The chat socket does not need to be connected. Do not append to the iframe `body`: it is `display: flex; flex-wrap: wrap`, so rows sit side by side, and the 12px font, line-height, and padding (`5px 7px 7px 10px`) are on `.messages`, not on `body`. If `.messages` is missing, create one and append it to `body`. Re-running should remove the previous sample nodes from that same parent.
 
+The plugin registers `window.__blcInjectSampleMessages()` on load. From the League client console, with the post-game scoreboard open, that call reads scoreboard names, seeds the roster, and appends the sample. `window.__blcClearSampleMessages()` removes those rows. `util/inject-sample-messages.js` is the same call.
+
+Typing `/sample` or `/demo` in the post-game `textarea.chat-input` and pressing Enter runs that same call. The line is not sent. The field is cleared. Shift, Alt, Ctrl, or Meta with Enter still go to the client.
+
 ### Chat line
 
 - `.message-name` is one node. Before this plugin rewrites it, the text is the Riot ID. The plugin replaces that text only when it matches a mapped alias (`Name#TAG` or the game name before `#`). A champion name already in `.message-name` is left as-is. Team color still comes from the row class.
+- With champion icons on, `.message-name` starts with `<img class="blc-champ-icon" alt="">`. The `src` is the roster portrait (`squarePortraitPath`, or `/lol-game-data/assets/v1/champion-icons/{id}.png`). Leave rows wrap that image and the name in `.blc-leave-label`, then the verb (` left the lobby`) stays a text node so the line can wrap. The icon is `1.75em` square. The iframe root gets `blc-chat-icons`, which sets the row line-height to `1.75em` and centers the name on the icon so it stays level with the colon and body.
 - The colon is its own `<span class="message">:</span>`. The text is `:`, with no spaces inside the span. The body is a second `<span class="message">` whose text is the LCU `body`.
 - The client template leaves whitespace between those three nodes. Collapsed, that is one space before the colon and one space after it. Sample rows need those space text nodes. Without them the colon sits against the name.
 
@@ -127,7 +135,7 @@ Rendered names wrap the game name and tag in left-to-right isolates:
 U+2066 U+2066 {gameName} U+2069 # U+2066 {tagLine} U+2069 U+2069
 ```
 
-Example: `⁦⁦Chaotic Fiasco⁩ #⁦NA1⁩⁩`. Strip `U+200E`, `U+200F`, `U+202A–U+202E`, and `U+2066–U+2069` before comparing. Sample rows can omit the marks; the plugin strips them when present.
+Example: `⁦⁦SummonerJ⁩ #⁦NA1⁩⁩`. Strip `U+200E`, `U+200F`, `U+202A–U+202E`, and `U+2066–U+2069` before comparing. Sample rows can omit the marks; the plugin strips them when present.
 
 ### Team class
 
@@ -136,14 +144,14 @@ The client sets the class on `.message-box` from `message.fromId === me.id` (min
 This plugin reclassifies each row from the eog roster (`player.ally`): match the speaker via Riot ID / leave text / unique champion name, then force `.my-team` or `.other-team`. `.mine` and celebration rows are left alone. A sample row only needs the correct class:
 
 
-| Row class     | Who          | Name color                         | Message body   |
-| ------------- | ------------ | ---------------------------------- | -------------- |
-| `.my-team`    | Allies       | `#16cae5`                          | client default |
-| `.other-team` | Enemies      | `#ff1a3e`                          | client default |
-| `.mine`       | Local player | `#16cae5` (same as allies for now) | `#348995`      |
+| Row class     | Who          | Name color | Message body |
+| ------------- | ------------ | ---------- | ------------ |
+| `.my-team`    | Allies       | `#16cae5`  | `#a1deed`    |
+| `.other-team` | Enemies      | `#ff1a3e`  | `#e7c1c8`    |
+| `.mine`       | Local player | `#fabe0a`  | `#bfb9a5`    |
 
 
-Colors live as CSS variables on the iframe `:root` in `frame.css` (`--blc-name-ally`, `--blc-name-enemy`, `--blc-name-mine`, `--blc-message-mine`, `--blc-leave-name`, `--blc-celebration`). Class hooks stay even when a role uses the client default, so a later settings panel can assign colors without new selectors.
+Colors live as CSS variables on the iframe `:root` in `frame.css` (`--blc-name-ally`, `--blc-name-enemy`, `--blc-name-mine`, `--blc-message-ally`, `--blc-message-enemy`, `--blc-message-mine`, `--blc-leave-name`, `--blc-celebration`). Body colors apply while `.blc-tint-bodies` is on the iframe root. The options panel can change every name and body color.
 
 Leave-row `.blc-system-name` inherits the system gray (`--blc-leave-name: inherit`). Celebration text uses `--blc-celebration` (`#a3862e`).
 
@@ -151,7 +159,7 @@ LCU `groupchat` messages in the 2026-09-23 capture use `fromSummonerId: 0`. `fro
 
 ### Credit
 
-`#blc-credit` is appended to the iframe `<html>`, not inside the scrolling message list. It is `position: fixed` at the top of the frame so it does not scroll away. Text comes from `CREDIT_TEXT` in `index.js` (currently `better-lol-chat by wryguy`). Gold `#ffd700` on `#0e0638`. Font family, size, and line-height are copied from a `.chat-message` / `.message` node. Class `blc-credit-hidden` hides it when chat is minimized (`focused-chat-box` absent, or our collapse flag).
+`#blc-credit` is appended to the iframe `<html>`, not inside the scrolling message list. It is `position: fixed` at the top of the frame so it does not scroll away. Text comes from `CREDIT_TEXT` in `index.js` (currently `better-lol-chat by wryguy`). Gold `#ffd700` on `#0e0638`. Font family, size, and line-height are copied from a `.chat-message` / `.message` node. Class `blc-credit-hidden` hides it whenever chat is collapsed: the room has lost `focused-chat-box`, or our collapse flag is set. Sticky chat does not matter. The message-list padding added for the banner is removed with it. The gear on that line opens `#blc-options` on the host page. The X to its right collapses chat. If the options panel is open, that click closes the panel and collapses chat.
 
 Plugin version is the single `VERSION` constant in `index.js` (`X.X`). It is logged once on `load()` as `[better-lol-chat] vX.X` and shown on the update row in the options panel.
 
@@ -195,9 +203,11 @@ Live row markup, with Ember noise removed: `[docs/fixtures/postgame-screen.html]
 
 The KDA column (`.INDIVIDUAL_KDA` / `.scoreboard-row-stat-line-primary`) is the scoreline immediately after the items. Challenge icons sit after gold, not between items and KDA.
 
-`.blc-row-champ` is an absolutely positioned image centered between the last `.postgame-player-item` and `.INDIVIDUAL_KDA`. The items container is a fixed 235px box with the slots packed left, so that empty space is inside the container, flush with the KDA column. Its size matches the primary keystone holder (`.postgame-player-keystone-icon.circle-icon-holder`, 30px at the default client scale). It is recentered on the 250ms tick and on window `resize`. `pointer-events: none` so item tooltips still work.
+With **Mid-row icons and level** on (`showMidRow`, default on), each visible scoreboard row gets a flex child `.blc-mid-row` inside `.scoreboard-row-content-container`, after `.scoreboard-row-pike` and before `.scoreboard-row-keystone-container`. It holds the in-game level, then the champion portrait. The level copies the font, weight, line-height, and color of `.scoreboard-row-in-game-level` and sits in a fixed two-digit slot so `8` and `18` take the same width. There is 8px between the pike and the level, and 6px between the level and the icon. The icon matches the primary keystone holder (`.postgame-player-keystone-icon.circle-icon-holder`, 30px at the default client scale). `pointer-events: none`.
 
-Do not insert the icon as a flex child. That shifts the row.
+The player details, player controls, and actions containers stay at the width they had before the badge, so they do not slide left under the chat. `.scoreboard-row-items-container` loses that same width. Its slots are packed left, so the empty space on its right is what moves. The keystone, summoner spells, and items shift right. KDA stays put.
+
+The badge is removed, and those widths are restored, while chat is collapsed (`blc-collapsed`, or `focused-chat-box` absent) and while the toggle is off. Not-in-chat rows fade the icon to 0.5. The level stays full color. Strong dim grayscales the icon only.
 
 ## Plugin entry
 

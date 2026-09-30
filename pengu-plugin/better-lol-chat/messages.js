@@ -1,4 +1,4 @@
-import { showsSummoner, showsChampion } from './settings.js';
+import { settings, showsSummoner, showsChampion } from './settings.js';
 import { aliases, players } from './roster.js';
 
 const JOIN_TEXT = /joined(\s+the)?\s+(room|lobby)/i;
@@ -45,31 +45,81 @@ function summonerLabel(originalText) {
   return stripBidi(originalText).replace(/\s+/g, ' ').trim();
 }
 
-function paintChatName(el, original, champ) {
-  if (!showsChampion() || !champ) {
-    if (stripBidi(el.textContent) !== stripBidi(original)) el.textContent = original;
-    return;
+function iconPart(player) {
+  return settings.showChatIcons && player?.iconPath ? { icon: player.iconPath } : null;
+}
+
+function partsMatch(el, parts) {
+  const nodes = [...el.childNodes];
+  if (nodes.length !== parts.length) return false;
+  for (let i = 0; i < parts.length; i++) {
+    const node = nodes[i];
+    const part = parts[i];
+    if (part.icon) {
+      if (node.nodeType !== 1 || !node.classList.contains('blc-champ-icon')) return false;
+      if (node.dataset.blcSrc !== part.icon) return false;
+      continue;
+    }
+    if (part.parts) {
+      if (node.nodeType !== 1 || !node.classList.contains(part.className)) return false;
+      if (!partsMatch(node, part.parts)) return false;
+      continue;
+    }
+    if (part.className) {
+      if (node.nodeType !== 1 || !node.classList.contains(part.className)) return false;
+      if (node.textContent !== part.text) return false;
+      continue;
+    }
+    if (node.nodeType !== 3 || node.textContent !== part.text) return false;
   }
-  if (!showsSummoner()) {
-    if (el.childElementCount || el.textContent !== champ) el.textContent = champ;
-    return;
+  return true;
+}
+
+function renderParts(doc, parts) {
+  return parts.map((part) => {
+    if (part.icon) {
+      const img = doc.createElement('img');
+      img.className = 'blc-champ-icon';
+      img.alt = '';
+      img.draggable = false;
+      img.dataset.blcSrc = part.icon;
+      img.src = part.icon;
+      return img;
+    }
+    if (part.parts) {
+      const span = doc.createElement('span');
+      span.className = part.className;
+      span.replaceChildren(...renderParts(doc, part.parts));
+      return span;
+    }
+    if (part.className) {
+      const span = doc.createElement('span');
+      span.className = part.className;
+      span.textContent = part.text;
+      return span;
+    }
+    return doc.createTextNode(part.text);
+  });
+}
+
+function paintParts(el, parts) {
+  if (partsMatch(el, parts)) return;
+  el.replaceChildren(...renderParts(el.ownerDocument, parts));
+}
+
+function paintChatName(el, original, player) {
+  const parts = [];
+  const icon = iconPart(player);
+  if (icon) parts.push(icon);
+  if (!showsChampion() || !player?.championName) {
+    parts.push({ text: original });
+  } else if (!showsSummoner()) {
+    parts.push({ text: player.championName });
+  } else {
+    parts.push({ text: summonerLabel(original) });
+    parts.push({ className: 'blc-secondary-name', text: `(${player.championName})` });
   }
-  const summoner = summonerLabel(original);
-  const champNote = `(${champ})`;
-  const extra = el.querySelector(':scope > .blc-secondary-name');
-  if (
-    el.childNodes.length === 2 &&
-    el.firstChild?.nodeType === 3 &&
-    el.firstChild.textContent === summoner &&
-    extra?.textContent === champNote
-  ) {
-    return;
-  }
-  const doc = el.ownerDocument;
-  const span = doc.createElement('span');
-  span.className = 'blc-secondary-name';
-  span.textContent = champNote;
-  el.replaceChildren(doc.createTextNode(summoner), span);
+  paintParts(el, parts);
 }
 
 function rewriteNames(root) {
@@ -77,19 +127,19 @@ function rewriteNames(root) {
   for (const el of nameNodes) {
     if (el.closest?.('.system-message')) continue;
     let original = el.dataset.blcOriginal;
-    let champ = '';
+    let player = null;
     if (original != null) {
-      champ = resolvePlayer(stripBidi(original).trim())?.championName || '';
+      player = resolvePlayer(stripBidi(original).trim());
     } else if (aliases().length) {
       const match = matchAlias(stripBidi(el.textContent || '').trim());
       if (!match) continue;
       original = el.textContent;
       el.dataset.blcOriginal = original;
-      champ = match.player.championName || '';
+      player = match.player;
     } else {
       continue;
     }
-    paintChatName(el, original, champ);
+    paintChatName(el, original, player);
   }
 }
 
@@ -165,56 +215,39 @@ function resolvePlayer(text) {
   return hit;
 }
 
-function paintLeaveName(span, original, champ, verb, summonerName) {
-  if (!showsChampion() || !champ) {
-    if (stripBidi(span.textContent) !== stripBidi(original)) span.textContent = original;
-    return;
+function paintLeaveName(span, original, player, verb, summonerName) {
+  const icon = iconPart(player);
+  const nameParts = [];
+  let verbText = null;
+  if (!showsChampion() || !player?.championName) {
+    nameParts.push({ text: original });
+  } else if (!showsSummoner()) {
+    nameParts.push({ className: 'blc-system-name', text: player.championName });
+    verbText = ` ${verb}`;
+  } else {
+    nameParts.push({ className: 'blc-system-name', text: summonerLabel(summonerName) });
+    nameParts.push({ className: 'blc-secondary-name', text: `(${player.championName})` });
+    verbText = ` ${verb}`;
   }
-  const doc = span.ownerDocument;
-  const nameEl = span.querySelector(':scope > .blc-system-name');
-  if (!showsSummoner()) {
-    const tail = span.childNodes[1];
-    if (
-      nameEl?.textContent === champ &&
-      !span.querySelector(':scope > .blc-secondary-name') &&
-      span.childNodes.length === 2 &&
-      tail?.nodeType === 3 &&
-      tail.textContent === ` ${verb}`
-    ) {
-      return;
-    }
-    const name = doc.createElement('span');
-    name.className = 'blc-system-name';
-    name.textContent = champ;
-    span.replaceChildren(name, doc.createTextNode(` ${verb}`));
-    return;
+  const parts = [];
+  if (icon && verbText) {
+    parts.push({ className: 'blc-leave-label', parts: [icon, ...nameParts] });
+    parts.push({ text: verbText });
+  } else {
+    if (icon) parts.push(icon);
+    parts.push(...nameParts);
   }
-  const summoner = summonerLabel(summonerName);
-  const champNote = `(${champ})`;
-  const extra = span.querySelector(':scope > .blc-secondary-name');
-  const tail = span.childNodes[2];
-  if (
-    nameEl?.textContent === summoner &&
-    extra?.textContent === champNote &&
-    span.childNodes.length === 3 &&
-    tail?.nodeType === 3 &&
-    tail.textContent === ` ${verb}`
-  ) {
-    return;
-  }
-  const name = doc.createElement('span');
-  name.className = 'blc-system-name';
-  name.textContent = summoner;
-  const champEl = doc.createElement('span');
-  champEl.className = 'blc-secondary-name';
-  champEl.textContent = champNote;
-  span.replaceChildren(name, champEl, doc.createTextNode(` ${verb}`));
+  paintParts(span, parts);
 }
 
 function rewriteLobbyMessages(root) {
   const spans = root.querySelectorAll?.('.system-message span') || [];
   for (const span of spans) {
-    if (span.classList.contains('blc-system-name') || span.classList.contains('blc-secondary-name')) {
+    if (
+      span.classList.contains('blc-system-name') ||
+      span.classList.contains('blc-secondary-name') ||
+      span.classList.contains('blc-leave-label')
+    ) {
       continue;
     }
     const box = span.closest('.message-box');
@@ -232,13 +265,12 @@ function rewriteLobbyMessages(root) {
     } else {
       parsed = parseLobbyLine(text);
       if (parsed?.kind !== 'leave') continue;
-      if (!matchAlias(parsed.name)) continue;
+      if (!resolvePlayer(parsed.name)) continue;
       original = span.textContent;
       span.dataset.blcOriginal = original;
     }
     box?.classList.remove('blc-hide-join');
-    const champ = matchAlias(parsed.name)?.player.championName || '';
-    paintLeaveName(span, original, champ, parsed.verb, parsed.name);
+    paintLeaveName(span, original, resolvePlayer(parsed.name), parsed.verb, parsed.name);
   }
 }
 
