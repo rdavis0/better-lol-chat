@@ -52,11 +52,7 @@
     ['my-team', 3, 'gg wp'],
   ];
 
-  const room =
-    document.querySelector('lol-social-chat-room[type="postGame"]') ||
-    [...document.querySelectorAll('lol-social-chat-room')].find(
-      (el) => el.getAttribute('type') === 'postGame',
-    );
+  const room = document.querySelector('lol-social-chat-room[type="postGame"]');
   if (!room) {
     console.warn('[BLC SAMPLE] no postGame chat room — open the post-game screen first');
     return;

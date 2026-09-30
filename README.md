@@ -1,23 +1,22 @@
 # better-lol-chat
 
-Unofficial Pengu Loader plugin that improves League of Legends **post-game chat**. Not endorsed by Riot Games. Do not inject ads into the League client.
+Unofficial Pengu Loader plugin that improves League of Legends **post-game chat**. Not endorsed by Riot Games.
 
 ## Feature list
 
-Living checklist (shipped + planned): [`docs/FEATURE_LIST.md`](docs/FEATURE_LIST.md)
-
-Chat DOM and behavior for future work: [`docs/CHAT_INTERFACE.md`](docs/CHAT_INTERFACE.md). Live exports: [`docs/fixtures/postgame-screen.html`](docs/fixtures/postgame-screen.html), [`docs/fixtures/messages.html`](docs/fixtures/messages.html), [`docs/fixtures/postgame-messages.json`](docs/fixtures/postgame-messages.json).
-
-Planned client and companion work, including emoji input in the standalone app only, is in the feature list.
+- Display Champion names alongside or instead of summoner names
+- Larger chat window
+- Automatically open chat on scoreboard
+- More pronounced darkened overlay for players who left chat
+- Color messages by team (fixes a client bug that marks all players as enemy team)
+- Keep chat open on loss of focus
+- Hide “player joined the lobby” messages
+- Feature toggles
+- Customizable chat colors
 
 ## Install
 
-Plugin source: `pengu-plugin/better-lol-chat/`
-
-Copy into:
-
-```text
-C:\Program Files\Pengu Loader\plugins\better-lol-chat
-```
-
-Restart League (Pengu active). Console should show `[better-lol-chat] v0.3`.
+1. Install Pengu Loader: [https://pengu.lol/](https://pengu.lol/)
+2. Download plugin files: `pengu-plugin/better-lol-chat/`
+3. Copy plugin files into: `C:\Program Files\Pengu Loader\plugins\better-lol-chat` (or your install location)
+4. Restart League (Pengu active). `Ctrl + Shift + I` in client to open dev tools. Console should show `[better-lol-chat] vX.X`.

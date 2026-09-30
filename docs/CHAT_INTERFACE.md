@@ -41,7 +41,7 @@ Post-game phases are `WaitingForStats`, `PreEndOfGame`, and `EndOfGame`.
 
 Chat is forced open only when a `.scoreboard-team-container` is actually on screen (Scoreboard tab). On Progression that element is not showing, so the plugin leaves vanilla collapse alone. Switching back to Progression clears `focused-chat-box` once, then stops managing it.
 
-While open on the scoreboard, the room is stretched with `blc-stretched`. Its top lines up with the top of `.scoreboard-header-component.is-player-team`. Width and bottom stay where vanilla put them. Each visible `.scoreboard-header-component` gets a leading flex child, `.blc-header-chat-gutter`, set to the chat window's width. `.scoreboard-header-team-name` then has a 5px left margin. While shifted, `.scoreboard-header-content` drops Riot's fixed 500px width (inline, so it wins) and shrinks to its text. The header's own spacer absorbs that width, so `.scoreboard-column-icons-container` stays put. The iframe fills the height above the input. Numbers are measured, not hardcoded, and recomputed on resize.
+While open on the scoreboard, the room is stretched with `blc-stretched`. Its top lines up with the top of `.scoreboard-header-component.is-player-team`. Width and bottom stay where vanilla put them. Each visible `.scoreboard-header-component` gets a leading flex child, `.blc-header-chat-gutter`, whose right edge lines up with the chat window. `.scoreboard-header-team-name` then has a 5px left margin. While shifted, `.scoreboard-header-content` drops Riot's fixed 500px width (inline, so it wins) and shrinks to its text. The header's own spacer absorbs that width, so `.scoreboard-column-icons-container` stays put. The iframe fills the height above the input. Numbers are measured, not hardcoded, and recomputed on resize.
 
 ## Messages iframe
 
@@ -106,8 +106,6 @@ Inject sample rows into `iframe.contentDocument.querySelector('.messages')`. An 
 
 - `.message-name` is one node. Before this plugin rewrites it, the text is the Riot ID. The plugin replaces that text only when it matches a mapped alias (`Name#TAG` or the game name before `#`). A champion name already in `.message-name` is left as-is. Team color still comes from the row class.
 - With champion icons on, `.message-name` starts with `<img class="blc-champ-icon" alt="">`. The `src` is the roster portrait (`squarePortraitPath`, or `/lol-game-data/assets/v1/champion-icons/{id}.png`). Leave rows get the same image before `.blc-system-name`.
-- Champion-only labels that are not unique become `Champion · GameName`. If that game name is shared too, the label is `Champion · GameName#tag`. Summoner-and-champion mode keeps the summoner as the primary text and the champion in `.blc-secondary-name`, so it does not add the suffix.
-- Optional timestamps add `<span class="blc-time">` as the first child of `.chat-message`, and of the leave-line span. The text is a local 12-hour clock (`7:14 PM`) from the LCU `timestamp`. Chat rows match groupchat entries by body and puuid, in log order. Leave rows match `left_room` by puuid or summoner id. The toggle is off unless the user turns it on.
 - The colon is its own `<span class="message">:</span>`. The text is `:`, with no spaces inside the span. The body is a second `<span class="message">` whose text is the LCU `body`.
 - The client template leaves whitespace between those three nodes. Collapsed, that is one space before the colon and one space after it. Sample rows need those space text nodes. Without them the colon sits against the name.
 
@@ -156,7 +154,7 @@ LCU `groupchat` messages in the 2026-09-23 capture use `fromSummonerId: 0`. `fro
 
 `#blc-credit` is appended to the iframe `<html>`, not inside the scrolling message list. It is `position: fixed` at the top of the frame so it does not scroll away. Text comes from `CREDIT_TEXT` in `index.js` (currently `better-lol-chat by wryguy`). Gold `#ffd700` on `#0e0638`. Font family, size, and line-height are copied from a `.chat-message` / `.message` node. Class `blc-credit-hidden` hides it when chat is minimized (`focused-chat-box` absent, or our collapse flag). The gear on that line opens `#blc-options` on the host page.
 
-Plugin version is the single `VERSION` constant in `index.js` (`0.3`). It is logged once on `load()` as `[better-lol-chat] v0.3` and shown in the options panel.
+Plugin version is the single `VERSION` constant in `index.js` (`X.X`). It is logged once on `load()` as `[better-lol-chat] vX.X` and shown on the update row in the options panel.
 
 ## Identity
 
@@ -200,7 +198,7 @@ The KDA column (`.INDIVIDUAL_KDA` / `.scoreboard-row-stat-line-primary`) is the 
 
 `.blc-row-champ` is an absolutely positioned image centered between the last `.postgame-player-item` and `.INDIVIDUAL_KDA`. The items container is a fixed 235px box with the slots packed left, so that empty space is inside the container, flush with the KDA column. Its size matches the primary keystone holder (`.postgame-player-keystone-icon.circle-icon-holder`, 30px at the default client scale). It is recentered on the 250ms tick and on window `resize`. `pointer-events: none` so item tooltips still work.
 
-Do not insert the icon as a flex child. That shifts the row. If two scoreboard rows share a champion, the icon is placed only when the row's summoner name matches one player. A champion-name-only match that hits more than one player is skipped.
+Do not insert the icon as a flex child. That shifts the row.
 
 ## Plugin entry
 
