@@ -1,11 +1,20 @@
 import './style.css';
 import frameCss from './frame.css?raw';
-import { mountUpdateStatus } from './update.js';
+import { settings, applyFrameSettings } from './settings.js';
+import {
+  initOptions,
+  closeOptions,
+  optionsAreOpen,
+  placeOptionsPanel,
+  attachCreditChrome,
+  syncOptionsScrollbar,
+} from './options.js';
+import { refreshIdentities, clearRoster, players } from './roster.js';
+import { rewriteMessages, matchAlias, stripBidi, isJoinNotice } from './messages.js';
 
 const LOG = '[better-lol-chat]';
 const VERSION = '0.2';
 const CREDIT_TEXT = `better-lol-chat by wryguy`;
-const JOIN_TEXT = /joined(\s+the)?\s+(room|lobby)/i;
 const POSTGAME_PHASES = new Set([
   'WaitingForStats',
   'PreEndOfGame',
@@ -35,72 +44,17 @@ let onScoreboard = false;
 let wasOnScoreboard = false;
 const frameObservers = new WeakMap();
 
-const byPuuid = new Map();
-const bySummonerId = new Map();
-let nameIndex = [];
-let roster = [];
-
-const SETTINGS_KEY = 'blc-settings';
-const DISCLAIMER =
-  "better-lol-chat isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.";
-
-const COLOR_DEFAULTS = {
-  nameAlly: '#16cae5',
-  nameEnemy: '#ff1a3e',
-  nameMine: '#fabe0a',
-  messageAlly: '#a1deed',
-  messageEnemy: '#e7c1c8',
-  messageMine: '#bfb9a5',
-};
-
-const COLOR_VARS = {
-  nameAlly: '--blc-name-ally',
-  nameEnemy: '--blc-name-enemy',
-  nameMine: '--blc-name-mine',
-  messageAlly: '--blc-message-ally',
-  messageEnemy: '--blc-message-enemy',
-  messageMine: '--blc-message-mine',
-};
-
-const TOGGLES = [
-  ['tallerChat', 'Large chat window'],
-  ['strongDim', 'Stronger inactive player dim'],
-  ['autoOpen', 'Automatically open chat'],
-];
-
-const NAME_CHOICES = [
-  ['summoner', 'Summoner names'],
-  ['champion', 'Champion names'],
-  ['both', 'Summoner & Champion names'],
-];
-
-const COLOR_FIELDS = [
-  { group: 'Names', key: 'nameAlly', label: 'Ally', reset: 'Reset ally name color' },
-  { group: 'Names', key: 'nameEnemy', label: 'Enemy', reset: 'Reset enemy name color' },
-  { group: 'Names', key: 'nameMine', label: 'You', reset: 'Reset your name color' },
-  { group: 'Messages', key: 'messageAlly', label: 'Ally', reset: 'Reset ally message color' },
-  { group: 'Messages', key: 'messageEnemy', label: 'Enemy', reset: 'Reset enemy message color' },
-  { group: 'Messages', key: 'messageMine', label: 'You', reset: 'Reset your message color' },
-];
-
-const PAINT_PROPS = [
-  'backgroundImage',
-  'backgroundPosition',
-  'backgroundSize',
-  'backgroundRepeat',
-  'webkitMaskImage',
-  'webkitMaskPosition',
-  'webkitMaskSize',
-  'webkitMaskRepeat',
-  'maskImage',
-  'maskPosition',
-  'maskSize',
-  'maskRepeat',
-];
-
-let settings = loadSettings();
-const chromeToken = String(Math.random());
-applyHostSettings();
+initOptions({
+  version: VERSION,
+  creditText: CREDIT_TEXT,
+  getRoom: () => chatRoom || findPostGameRoom(),
+  getFrameDocument,
+  onCommit() {
+    scheduleEnhance();
+    ensureOpen();
+  },
+  armFrameEscape,
+});
 
 export function init(context) {
   socket = context.socket;
@@ -182,10 +136,7 @@ function onPhase(phase) {
     chatRoom = null;
     onScoreboard = false;
     wasOnScoreboard = false;
-    byPuuid.clear();
-    bySummonerId.clear();
-    nameIndex = [];
-    roster = [];
+    clearRoster();
     if (focusClassObserver) {
       focusClassObserver.disconnect();
       focusClassObserver = null;
@@ -208,165 +159,6 @@ function onPhase(phase) {
       setTimeout(ensureOpen, 2500);
     })
     .catch((err) => console.warn(LOG, err));
-}
-
-async function lcu(path) {
-  const res = await fetch(path);
-  if (!res.ok) return null;
-  const text = await res.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-async function refreshIdentities() {
-  const [me, eog, champs, conversations] = await Promise.all([
-    lcu('/lol-summoner/v1/current-summoner'),
-    lcu('/lol-end-of-game/v1/eog-stats-block'),
-    lcu('/lol-game-data/assets/v1/champion-summary.json'),
-    lcu('/lol-chat/v1/conversations'),
-  ]);
-
-  const champNames = new Map();
-  const champIcons = new Map();
-  for (const c of champs || []) {
-    if (!c || c.id == null) continue;
-    const id = Number(c.id);
-    champNames.set(id, c.name || c.alias);
-    if (c.squarePortraitPath) champIcons.set(id, c.squarePortraitPath);
-  }
-
-  const players = collectPlayers(eog, me, champNames, champIcons);
-  roster = players;
-  byPuuid.clear();
-  bySummonerId.clear();
-  const aliases = [];
-
-  for (const player of players) {
-    if (player.puuid) byPuuid.set(String(player.puuid), player);
-    if (player.summonerId != null && player.summonerId !== '' && Number(player.summonerId) !== 0) {
-      bySummonerId.set(String(player.summonerId), player);
-    }
-    for (const alias of player.aliases) {
-      if (alias) aliases.push({ name: alias, player });
-    }
-  }
-
-  const postGame = (conversations || []).find((c) => c?.type === 'postGame');
-  const postGameConversationId = postGame?.id || postGame?.pid || null;
-
-  if (postGameConversationId) {
-    const messages = await lcu(
-      `/lol-chat/v1/conversations/${encodeURIComponent(postGameConversationId)}/messages`,
-    );
-    applyJoinRoomMapping(messages || []);
-  }
-
-  aliases.sort((a, b) => b.name.length - a.name.length);
-  nameIndex = aliases;
-  console.log(LOG, 'mapped', players.length, 'players', { conversation: postGameConversationId });
-}
-
-function collectPlayers(eog, me, champNames, champIcons) {
-  if (!eog) return [];
-  const myPuuid = me?.puuid;
-  const mySummonerId = me?.summonerId;
-  const list = [];
-
-  const push = (raw, allyHint, teamId) => {
-    if (!raw) return;
-    const championId = Number(raw.championId);
-    const championName =
-      champNames.get(championId) ||
-      raw.championName ||
-      (raw.skinName ? String(raw.skinName) : null) ||
-      'Unknown';
-    const iconPath =
-      champIcons.get(championId) ||
-      (championId ? `/lol-game-data/assets/v1/champion-icons/${championId}.png` : '');
-    const aliases = unique([
-      raw.riotIdGameName && raw.riotIdTagLine
-        ? `${raw.riotIdGameName}#${raw.riotIdTagLine}`
-        : null,
-      raw.gameName && raw.tagLine ? `${raw.gameName}#${raw.tagLine}` : null,
-      raw.riotIdGameName,
-      raw.gameName,
-      raw.summonerName,
-      raw.displayName,
-      raw.riotId,
-    ]);
-    list.push({
-      puuid: raw.puuid || raw.playerPuuid || null,
-      summonerId: raw.summonerId ?? raw.userId ?? null,
-      teamId: teamId ?? raw.teamId ?? null,
-      championName,
-      iconPath,
-      ally: allyHint,
-      aliases,
-    });
-  };
-
-  if (Array.isArray(eog.teams) && eog.teams.length) {
-    for (const team of eog.teams) {
-      const ally = team.isPlayerTeam === true;
-      for (const p of team.players || []) push(p, ally, p.teamId ?? team.teamId);
-    }
-  }
-
-  if (!list.length) {
-    for (const p of eog.teamPlayerParticipantStats || []) push(p, true, p.teamId);
-    for (const p of eog.otherTeamPlayerParticipantStats || []) push(p, false, p.teamId);
-  }
-
-  const mine = list.find(
-    (p) =>
-      (myPuuid && p.puuid === myPuuid) ||
-      (mySummonerId != null && String(p.summonerId) === String(mySummonerId)),
-  );
-  if (mine) {
-    const myTeam = mine.teamId;
-    const anyAllyHint = list.some((p) => p.ally === true);
-    if (!anyAllyHint && myTeam != null) {
-      for (const p of list) p.ally = String(p.teamId) === String(myTeam);
-    } else {
-      mine.ally = true;
-    }
-  }
-
-  return list;
-}
-
-// Join/leave messages fill a puuid or summoner id the eog block omitted.
-// Name rendering does not read these ids. Champion-ditto disambiguation will.
-function applyJoinRoomMapping(messages) {
-  for (const msg of messages || []) {
-    if (msg?.type !== 'system') continue;
-    if (String(msg.body) !== 'joined_room' && String(msg.body) !== 'left_room') continue;
-    const puuid = msg.fromPuuid && String(msg.fromPuuid);
-    const sid = msg.fromSummonerId;
-    if (!puuid || sid == null || Number(sid) === 0) continue;
-    const player = byPuuid.get(puuid) || bySummonerId.get(String(sid));
-    if (!player) continue;
-    player.puuid = player.puuid || puuid;
-    player.summonerId = player.summonerId || sid;
-    byPuuid.set(puuid, player);
-    bySummonerId.set(String(sid), player);
-  }
-}
-
-function unique(values) {
-  const out = [];
-  const seen = new Set();
-  for (const v of values) {
-    const s = String(v || '').trim();
-    if (!s || seen.has(s.toLowerCase())) continue;
-    seen.add(s.toLowerCase());
-    out.push(s);
-  }
-  return out;
 }
 
 function findPostGameRoom() {
@@ -558,7 +350,7 @@ function playerForRow(row) {
     .trim()
     .toLowerCase();
   if (!champ) return null;
-  return roster.find((p) => p.championName && p.championName.toLowerCase() === champ && p.iconPath) || null;
+  return players().find((p) => p.championName && p.championName.toLowerCase() === champ && p.iconPath) || null;
 }
 
 function statAfterItems(row, anchorRight) {
@@ -585,7 +377,7 @@ function champIconSize() {
 }
 
 function placeScoreboardIcons() {
-  if (!onScoreboard || !roster.length) {
+  if (!onScoreboard || !players().length) {
     clearScoreboardIcons();
     return;
   }
@@ -777,14 +569,20 @@ function setHeaderGutter(headers, px) {
 function shiftHeadersToChat(room) {
   const headers = visibleScoreboardHeaders();
   const player = headers.find((el) => el.classList.contains('is-player-team'));
-  const chatWidth = room?.getBoundingClientRect().width || 0;
-  if (!player || chatWidth < 1) {
+  const chatRight = room?.getBoundingClientRect().right || 0;
+  if (!player || chatRight < 1) {
     clearHeaderShift();
     return;
   }
 
   for (const header of headers) releaseHeaderContentWidth(header);
-  setHeaderGutter(headers, viewportToCss(player, chatWidth));
+  const gutter = ensureHeaderGutter(player);
+  const span = chatRight - gutter.getBoundingClientRect().left;
+  if (span < 1) {
+    clearHeaderShift();
+    return;
+  }
+  setHeaderGutter(headers, viewportToCss(player, span));
 }
 
 function collapseWindow(room = findPostGameRoom()) {
@@ -902,11 +700,6 @@ function onKeyDown(event) {
     return;
   }
   scheduleEnsureOpen(0);
-}
-
-function optionsAreOpen() {
-  const panel = document.getElementById('blc-options');
-  return !!panel && !panel.hidden;
 }
 
 function foreignTextEntry(room) {
@@ -1073,12 +866,7 @@ function enhance() {
     if (doc) {
       injectFrameStyles(doc);
       insertCredit(doc);
-      rewriteNames(doc);
-      rewriteLobbyMessages(doc);
-      // Stored Riot IDs (data-blc-original) still match after the visible text
-      // becomes a champion name. groupchat rows often ship with fromSummonerId 0,
-      // so the client marks allies as other-team.
-      fixTeamClasses(doc);
+      rewriteMessages(doc);
     }
   } catch (err) {
     console.warn(LOG, err);
@@ -1093,7 +881,7 @@ function stripRoomChangedJoinNoise(room) {
   try {
     const arr = JSON.parse(raw);
     if (!Array.isArray(arr)) return;
-    const filtered = arr.filter((s) => !JOIN_TEXT.test(String(s)));
+    const filtered = arr.filter((s) => !isJoinNotice(String(s)));
     if (filtered.length !== arr.length) {
       room.setAttribute('room-changed-messages', JSON.stringify(filtered));
     }
@@ -1159,462 +947,6 @@ function scrollParent(el) {
   return doc?.scrollingElement || doc?.body || null;
 }
 
-function normalizeHex(value, allowShort) {
-  const match = String(value || '').trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-  if (!match) return null;
-  let hex = match[1].toLowerCase();
-  if (hex.length === 3) {
-    if (!allowShort) return null;
-    hex = hex.split('').map((ch) => ch + ch).join('');
-  }
-  return `#${hex}`;
-}
-
-function nameStyleFrom(showSummoner, showChampion) {
-  if (showSummoner && showChampion) return 'both';
-  if (showSummoner) return 'summoner';
-  return 'champion';
-}
-
-function showsSummoner() {
-  return settings.nameStyle === 'summoner' || settings.nameStyle === 'both';
-}
-
-function showsChampion() {
-  return settings.nameStyle === 'champion' || settings.nameStyle === 'both';
-}
-
-function loadSettings() {
-  const next = {
-    tallerChat: true,
-    nameStyle: 'champion',
-    coloredBodies: true,
-    strongDim: true,
-    autoOpen: true,
-    colors: { ...COLOR_DEFAULTS },
-  };
-  try {
-    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
-    if (!saved || typeof saved !== 'object') return next;
-    for (const [key] of TOGGLES) {
-      if (typeof saved[key] === 'boolean') next[key] = saved[key];
-    }
-    if (typeof saved.coloredBodies === 'boolean') next.coloredBodies = saved.coloredBodies;
-    if (saved.nameStyle === 'summoner' || saved.nameStyle === 'champion' || saved.nameStyle === 'both') {
-      next.nameStyle = saved.nameStyle;
-    } else {
-      let showSummoner = false;
-      let showChampion = true;
-      if (typeof saved.showSummonerNames === 'boolean') showSummoner = saved.showSummonerNames;
-      else if (typeof saved.championNames === 'boolean') showSummoner = !saved.championNames;
-      if (typeof saved.showChampionNames === 'boolean') showChampion = saved.showChampionNames;
-      else if (typeof saved.championNames === 'boolean') showChampion = saved.championNames;
-      if (!showSummoner && !showChampion) showChampion = true;
-      next.nameStyle = nameStyleFrom(showSummoner, showChampion);
-    }
-    if (saved.colors && typeof saved.colors === 'object') {
-      for (const key of Object.keys(COLOR_DEFAULTS)) {
-        const hex = normalizeHex(saved.colors[key], true);
-        if (hex) next.colors[key] = hex;
-      }
-    }
-  } catch {
-    /* ignore broken storage */
-  }
-  return next;
-}
-
-function saveSettings() {
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-    /* ignore quota / private mode */
-  }
-}
-
-let saveTimer = 0;
-function scheduleSave() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    saveTimer = 0;
-    saveSettings();
-  }, 200);
-}
-
-function applyHostSettings() {
-  document.documentElement?.classList.toggle('blc-strong-dim', settings.strongDim);
-}
-
-function applyFrameSettings(doc) {
-  if (!doc?.documentElement) return;
-  doc.documentElement.classList.toggle('blc-tint-bodies', settings.coloredBodies);
-  for (const [key, varName] of Object.entries(COLOR_VARS)) {
-    doc.documentElement.style.setProperty(varName, settings.colors[key]);
-  }
-}
-
-function commitSettings() {
-  saveSettings();
-  applyHostSettings();
-  const doc = getFrameDocument(chatRoom || findPostGameRoom());
-  if (doc) applyFrameSettings(doc);
-  scheduleEnhance();
-  ensureOpen();
-}
-
-function hasPaint(cs) {
-  if (!cs) return false;
-  const bg = cs.backgroundImage;
-  const mask = cs.maskImage || cs.webkitMaskImage;
-  return (bg && bg !== 'none') || (mask && mask !== 'none');
-}
-
-function copyPaint(target, cs) {
-  target.textContent = '';
-  target.style.width = cs.width;
-  target.style.height = cs.height;
-  for (const prop of PAINT_PROPS) {
-    const value = cs[prop];
-    if (!value || value === 'none' || value === 'normal') continue;
-    target.style[prop] = value;
-  }
-  const mask = cs.maskImage || cs.webkitMaskImage;
-  if (mask && mask !== 'none' && cs.backgroundColor) target.style.backgroundColor = cs.backgroundColor;
-  target.dataset.blcPainted = '1';
-}
-
-function paintCog(button) {
-  if (!button || button.dataset.blcPainted) return;
-  const src = document.querySelector('.app-controls-setting');
-  const cs = src ? getComputedStyle(src) : null;
-  if (!hasPaint(cs)) {
-    button.textContent = '⚙';
-    return;
-  }
-  copyPaint(button, cs);
-}
-
-function findResetPaint() {
-  const nodes = document.querySelectorAll('[class*="reset" i], [class*="refresh" i], [class*="restore" i]');
-  for (const el of nodes) {
-    if (el.classList.contains('app-controls-setting')) continue;
-    const cs = getComputedStyle(el);
-    const w = parseFloat(cs.width);
-    const h = parseFloat(cs.height);
-    if (w < 8 || h < 8 || w > 32 || h > 32) continue;
-    if (!hasPaint(cs)) continue;
-    return cs;
-  }
-  return null;
-}
-
-function closeOptions() {
-  const panel = document.getElementById('blc-options');
-  if (!panel || panel.hidden) return;
-  panel.hidden = true;
-  const cog = getFrameDocument(chatRoom || findPostGameRoom())?.getElementById('blc-options-cog');
-  cog?.setAttribute('aria-expanded', 'false');
-}
-
-function toggleOptions() {
-  const panel = document.getElementById('blc-options');
-  const cog = getFrameDocument(chatRoom || findPostGameRoom())?.getElementById('blc-options-cog');
-  if (!panel) return;
-  const willOpen = panel.hidden;
-  panel.hidden = !willOpen;
-  cog?.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-  if (willOpen) placeOptionsPanel();
-}
-
-function placeOptionsPanel() {
-  const panel = document.getElementById('blc-options');
-  if (!panel || panel.hidden) return;
-  const room = chatRoom || findPostGameRoom();
-  const footer = document.querySelector('.postgame-footer');
-  if (!room || !footer) return;
-  const roomRect = room.getBoundingClientRect();
-  const footerTop = footer.getBoundingClientRect().top;
-  if (roomRect.width < 1 || footerTop < 1) return;
-  panel.style.left = `${Math.round(roomRect.right)}px`;
-  panel.style.right = 'auto';
-  panel.style.top = 'auto';
-  panel.style.bottom = `${Math.round(window.innerHeight - footerTop)}px`;
-  panel.style.height = '';
-  panel.style.maxHeight = `${Math.round(footerTop)}px`;
-}
-
-function hookOptionsDismiss(doc) {
-  if (doc.documentElement.dataset.blcOptionsHooked) return;
-  doc.documentElement.dataset.blcOptionsHooked = '1';
-  doc.addEventListener('pointerdown', (event) => {
-    const panel = document.getElementById('blc-options');
-    const cog = doc.getElementById('blc-options-cog');
-    if (!panel || panel.hidden) return;
-    const target = event.target;
-    if (cog?.contains(target)) return;
-    closeOptions();
-  });
-  armFrameEscape(doc);
-}
-
-function appendHeading(body, doc, text) {
-  const heading = doc.createElement('div');
-  heading.className = 'blc-options-heading';
-  heading.textContent = text;
-  body.appendChild(heading);
-}
-
-function appendToggle(body, doc, key, text) {
-  const row = doc.createElement('label');
-  row.className = 'blc-switch';
-  const span = doc.createElement('span');
-  span.textContent = text;
-  const input = doc.createElement('input');
-  input.type = 'checkbox';
-  input.checked = !!settings[key];
-  input.addEventListener('change', () => {
-    settings[key] = input.checked;
-    if (key === 'coloredBodies') syncMessageColorLock();
-    commitSettings();
-  });
-  const ui = doc.createElement('span');
-  ui.className = 'blc-switch-ui';
-  ui.setAttribute('aria-hidden', 'true');
-  row.append(input, ui, span);
-  body.appendChild(row);
-}
-
-function appendNameChoices(body, doc) {
-  for (const [value, text] of NAME_CHOICES) {
-    const row = doc.createElement('label');
-    row.className = 'blc-choice';
-    const input = doc.createElement('input');
-    input.type = 'radio';
-    input.name = 'blc-name-style';
-    input.value = value;
-    input.checked = settings.nameStyle === value;
-    input.addEventListener('change', () => {
-      if (!input.checked) return;
-      settings.nameStyle = value;
-      commitSettings();
-    });
-    const span = doc.createElement('span');
-    span.textContent = text;
-    const mark = doc.createElement('span');
-    mark.className = 'blc-choice-ui';
-    mark.setAttribute('aria-hidden', 'true');
-    row.append(input, mark, span);
-    body.appendChild(row);
-  }
-}
-
-function syncMessageColorLock() {
-  const locked = !settings.coloredBodies;
-  document.querySelectorAll('.blc-color-row[data-blc-group="Messages"]').forEach((row) => {
-    row.classList.toggle('blc-color-disabled', locked);
-    row.querySelectorAll('input, button').forEach((el) => {
-      el.disabled = locked;
-    });
-  });
-}
-
-function buildColorRow(doc, field, resetPaint) {
-  const row = doc.createElement('div');
-  row.className = 'blc-color-row';
-  row.dataset.blcGroup = field.group;
-
-  const label = doc.createElement('span');
-  label.textContent = field.label;
-
-  const picker = doc.createElement('input');
-  picker.type = 'color';
-  picker.value = settings.colors[field.key];
-  picker.setAttribute('aria-label', `${field.group} ${field.label} color`);
-
-  const text = doc.createElement('input');
-  text.type = 'text';
-  text.spellcheck = false;
-  text.maxLength = 7;
-  text.value = settings.colors[field.key];
-  text.setAttribute('aria-label', `${field.group} ${field.label} hex`);
-  text.autocapitalize = 'off';
-
-  const reset = doc.createElement('button');
-  reset.type = 'button';
-  reset.className = 'blc-color-reset';
-  reset.setAttribute('aria-label', field.reset);
-  reset.textContent = '↺';
-  if (resetPaint) copyPaint(reset, resetPaint);
-
-  const applyHex = (hex, immediate) => {
-    picker.value = hex;
-    text.value = hex;
-    if (settings.colors[field.key] === hex) return;
-    settings.colors[field.key] = hex;
-    const frame = getFrameDocument(chatRoom || findPostGameRoom());
-    if (frame) applyFrameSettings(frame);
-    if (immediate) saveSettings();
-    else scheduleSave();
-  };
-
-  picker.addEventListener('input', () => {
-    const hex = normalizeHex(picker.value, false);
-    if (hex) applyHex(hex, false);
-  });
-  // #RGB is valid, but so is the first four characters of a six-digit code. Expand short form on blur.
-  text.addEventListener('input', () => {
-    const hex = normalizeHex(text.value, false);
-    if (hex) applyHex(hex, true);
-  });
-  text.addEventListener('blur', () => {
-    const hex = normalizeHex(text.value, true);
-    if (hex) applyHex(hex, true);
-    else text.value = settings.colors[field.key];
-  });
-  reset.addEventListener('click', () => applyHex(COLOR_DEFAULTS[field.key], true));
-
-  row.append(label, picker, text, reset);
-  return row;
-}
-
-function buildCreditChrome(doc, el) {
-  el.replaceChildren();
-
-  const label = doc.createElement('span');
-  label.className = 'blc-credit-label';
-  label.textContent = CREDIT_TEXT;
-
-  const cog = doc.createElement('button');
-  cog.type = 'button';
-  cog.id = 'blc-options-cog';
-  cog.className = 'blc-options-cog';
-  cog.setAttribute('aria-label', 'Options');
-  cog.setAttribute('aria-expanded', 'false');
-  cog.setAttribute('aria-controls', 'blc-options');
-  cog.addEventListener('pointerdown', (event) => {
-    event.preventDefault();
-  });
-  cog.addEventListener('click', (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    toggleOptions();
-  });
-
-  el.append(label, cog);
-  paintCog(cog);
-  hookOptionsDismiss(doc);
-  ensureOptionsPanel();
-}
-
-function ensureOptionsPanel() {
-  const existing = document.getElementById('blc-options');
-  if (existing?.dataset.blcChrome === chromeToken) return;
-  existing?.remove();
-
-  const panel = document.createElement('div');
-  panel.id = 'blc-options';
-  panel.className = 'blc-options';
-  panel.hidden = true;
-  panel.dataset.blcChrome = chromeToken;
-  panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', 'better-lol-chat options');
-
-  const body = document.createElement('div');
-  body.className = 'blc-options-body';
-
-  appendHeading(body, document, 'General');
-  for (const [key, text] of TOGGLES) appendToggle(body, document, key, text);
-
-  appendHeading(body, document, 'Name style');
-  appendNameChoices(body, document);
-  const resetPaint = findResetPaint();
-  for (const field of COLOR_FIELDS) {
-    if (field.group !== 'Names') continue;
-    body.appendChild(buildColorRow(document, field, resetPaint));
-  }
-
-  appendHeading(body, document, 'Message style');
-  appendToggle(body, document, 'coloredBodies', 'Colored message bodies');
-  for (const field of COLOR_FIELDS) {
-    if (field.group !== 'Messages') continue;
-    body.appendChild(buildColorRow(document, field, resetPaint));
-  }
-  syncMessageColorLock();
-
-  const disclaimer = document.createElement('p');
-  disclaimer.className = 'blc-options-disclaimer';
-  disclaimer.textContent = DISCLAIMER;
-
-  panel.append(body, disclaimer);
-  mountUpdateStatus(disclaimer, VERSION);
-  panel.addEventListener('pointerdown', (event) => {
-    const field = event.target?.closest?.('input[type="text"], input[type="color"], textarea');
-    if (field) return;
-    event.preventDefault();
-  });
-  (document.body || document.documentElement).appendChild(panel);
-}
-
-function retargetScrollSelector(selector) {
-  if (!/scrollbar/i.test(selector)) return null;
-  if (/\.messages\b/.test(selector)) return selector.replace(/\.messages\b/g, '.blc-options-body');
-  if (/^(html|body|\*)?::-webkit-scrollbar/i.test(selector)) {
-    return selector.replace(/^(html|body|\*)?/, '.blc-options-body');
-  }
-  return null;
-}
-
-function collectScrollRules(rules, out) {
-  for (const rule of rules) {
-    if (rule.cssRules) {
-      collectScrollRules(rule.cssRules, out);
-      continue;
-    }
-    if (!rule.selectorText || !rule.style) continue;
-    const parts = [];
-    let fromMessages = false;
-    for (const part of rule.selectorText.split(',')) {
-      const trimmed = part.trim();
-      const next = retargetScrollSelector(trimmed);
-      if (!next) continue;
-      if (/\.messages\b/.test(trimmed)) fromMessages = true;
-      parts.push(next);
-    }
-    if (!parts.length || !rule.style.cssText) continue;
-    out.push({ text: `${parts.join(', ')} { ${rule.style.cssText} }`, fromMessages });
-  }
-}
-
-function syncChatScrollbar(frameDoc) {
-  const messages = frameDoc.querySelector?.('.messages');
-  const body = document.querySelector('#blc-options .blc-options-body');
-  if (messages && body) {
-    const cs = frameDoc.defaultView?.getComputedStyle(messages);
-    if (cs?.scrollbarColor && cs.scrollbarColor !== 'auto') body.style.scrollbarColor = cs.scrollbarColor;
-    if (cs?.scrollbarWidth && cs.scrollbarWidth !== 'auto') body.style.scrollbarWidth = cs.scrollbarWidth;
-  }
-
-  const found = [];
-  for (const sheet of frameDoc.styleSheets || []) {
-    try {
-      if (sheet.cssRules) collectScrollRules(sheet.cssRules, found);
-    } catch {
-      /* unreadable stylesheet */
-    }
-  }
-  const fromMessages = found.filter((rule) => rule.fromMessages);
-  const rules = fromMessages.length ? fromMessages : found;
-  if (!rules.length) return;
-  const css = rules.map((rule) => rule.text).join('\n');
-  let style = document.getElementById('blc-options-scrollbar');
-  if (!style) {
-    style = document.createElement('style');
-    style.id = 'blc-options-scrollbar';
-    (document.head || document.documentElement).appendChild(style);
-  }
-  if (style.textContent !== css) style.textContent = css;
-}
-
 function insertCredit(doc) {
   applyFrameSettings(doc);
   const host = doc.documentElement || doc.body;
@@ -1625,13 +957,10 @@ function insertCredit(doc) {
     el.id = 'blc-credit';
     el.className = 'blc-credit';
   }
-  if (el.dataset.blcChrome !== chromeToken) {
-    buildCreditChrome(doc, el);
-    el.dataset.blcChrome = chromeToken;
-  } else paintCog(el.querySelector('.blc-options-cog'));
+  attachCreditChrome(doc, el);
   if (el.parentElement !== host) host.appendChild(el);
   applyCreditFont(doc, el);
-  syncChatScrollbar(doc);
+  syncOptionsScrollbar(doc);
   syncCredit(chatRoom);
 
   const box = doc.querySelector('.message-box');
@@ -1682,240 +1011,4 @@ function injectFrameStyles(doc) {
     (doc.head || doc.documentElement).appendChild(style);
   }
   if (style.textContent !== frameCss) style.textContent = frameCss;
-}
-
-function summonerLabel(originalText) {
-  return stripBidi(originalText).replace(/\s+/g, ' ').trim();
-}
-
-function paintChatName(el, original, champ) {
-  if (!showsChampion() || !champ) {
-    if (stripBidi(el.textContent) !== stripBidi(original)) el.textContent = original;
-    return;
-  }
-  if (!showsSummoner()) {
-    if (el.childElementCount || el.textContent !== champ) el.textContent = champ;
-    return;
-  }
-  const summoner = summonerLabel(original);
-  const champNote = `(${champ})`;
-  const extra = el.querySelector(':scope > .blc-secondary-name');
-  if (
-    el.childNodes.length === 2 &&
-    el.firstChild?.nodeType === 3 &&
-    el.firstChild.textContent === summoner &&
-    extra?.textContent === champNote
-  ) {
-    return;
-  }
-  const doc = el.ownerDocument;
-  const span = doc.createElement('span');
-  span.className = 'blc-secondary-name';
-  span.textContent = champNote;
-  el.replaceChildren(doc.createTextNode(summoner), span);
-}
-
-function rewriteNames(root) {
-  const nameNodes = root.querySelectorAll?.('.message-box .message-name') || [];
-  for (const el of nameNodes) {
-    if (el.closest?.('.system-message')) continue;
-    let original = el.dataset.blcOriginal;
-    let champ = '';
-    if (original != null) {
-      champ = resolvePlayer(stripBidi(original).trim())?.championName || '';
-    } else if (nameIndex.length) {
-      const match = matchAlias(stripBidi(el.textContent || '').trim());
-      if (!match) continue;
-      original = el.textContent;
-      el.dataset.blcOriginal = original;
-      champ = match.player.championName || '';
-    } else {
-      continue;
-    }
-    paintChatName(el, original, champ);
-  }
-}
-
-const LEAVE_TEXT = /^(.*?)\s+(left(?:\s+the)?\s+(?:room|lobby))\s*$/i;
-const JOIN_LINE = /^(.*?)\s+joined(?:\s+the)?\s+(?:room|lobby)\s*$/i;
-
-function parseLobbyLine(text) {
-  const normalized = stripBidi(text).replace(/\s+/g, ' ').trim();
-  if (!normalized) return null;
-  const leave = normalized.match(LEAVE_TEXT);
-  if (leave) return { kind: 'leave', name: leave[1].trim(), verb: leave[2] };
-  const join = normalized.match(JOIN_LINE);
-  if (join) return { kind: 'join', name: join[1].trim() };
-  return null;
-}
-
-function fixTeamClasses(root) {
-  if (!roster.length && !nameIndex.length) return;
-
-  const boxes = root.querySelectorAll?.('.message-box') || [];
-  for (const box of boxes) {
-    if (box.classList.contains('mine')) continue;
-    if (box.querySelector?.('.celebration')) continue;
-
-    const player = speakerForBox(box);
-    if (!player) continue;
-
-    const want = player.ally ? 'my-team' : 'other-team';
-    const drop = player.ally ? 'other-team' : 'my-team';
-    if (box.classList.contains(want) && !box.classList.contains(drop)) continue;
-    box.classList.remove(drop);
-    box.classList.add(want);
-  }
-}
-
-function speakerForBox(box) {
-  const nameEl = box.querySelector?.('.chat-message .message-name');
-  if (nameEl) {
-    const source = nameEl.dataset.blcOriginal ?? nameEl.textContent;
-    return resolvePlayer(stripBidi(source || '').trim());
-  }
-
-  const span = box.querySelector?.('.system-message span');
-  if (!span) return null;
-
-  if (span.dataset?.blcOriginal) {
-    const stored = parseLobbyLine(span.dataset.blcOriginal);
-    if (stored) return resolvePlayer(stored.name);
-  }
-
-  const champEl = span.querySelector?.('.blc-system-name');
-  if (champEl) {
-    const fromChamp = resolvePlayer(stripBidi(champEl.textContent || '').trim());
-    if (fromChamp) return fromChamp;
-  }
-
-  const parsed = parseLobbyLine(span.textContent || '');
-  if (parsed) return resolvePlayer(parsed.name);
-  return null;
-}
-
-function resolvePlayer(text) {
-  const trimmed = stripBidi(text).trim();
-  if (!trimmed) return null;
-
-  const byAlias = matchAlias(trimmed);
-  if (byAlias) return byAlias.player;
-
-  const lower = trimmed.toLowerCase();
-  let hit = null;
-  for (const player of roster) {
-    if (!player.championName || player.championName.toLowerCase() !== lower) continue;
-    if (hit && hit !== player) return null;
-    hit = player;
-  }
-  return hit;
-}
-
-function paintLeaveName(span, original, champ, verb, summonerName) {
-  if (!showsChampion() || !champ) {
-    if (stripBidi(span.textContent) !== stripBidi(original)) span.textContent = original;
-    return;
-  }
-  const doc = span.ownerDocument;
-  const nameEl = span.querySelector(':scope > .blc-system-name');
-  if (!showsSummoner()) {
-    const tail = span.childNodes[1];
-    if (
-      nameEl?.textContent === champ &&
-      !span.querySelector(':scope > .blc-secondary-name') &&
-      span.childNodes.length === 2 &&
-      tail?.nodeType === 3 &&
-      tail.textContent === ` ${verb}`
-    ) {
-      return;
-    }
-    const name = doc.createElement('span');
-    name.className = 'blc-system-name';
-    name.textContent = champ;
-    span.replaceChildren(name, doc.createTextNode(` ${verb}`));
-    return;
-  }
-  const summoner = summonerLabel(summonerName);
-  const champNote = `(${champ})`;
-  const extra = span.querySelector(':scope > .blc-secondary-name');
-  const tail = span.childNodes[2];
-  if (
-    nameEl?.textContent === summoner &&
-    extra?.textContent === champNote &&
-    span.childNodes.length === 3 &&
-    tail?.nodeType === 3 &&
-    tail.textContent === ` ${verb}`
-  ) {
-    return;
-  }
-  const name = doc.createElement('span');
-  name.className = 'blc-system-name';
-  name.textContent = summoner;
-  const champEl = doc.createElement('span');
-  champEl.className = 'blc-secondary-name';
-  champEl.textContent = champNote;
-  span.replaceChildren(name, champEl, doc.createTextNode(` ${verb}`));
-}
-
-function rewriteLobbyMessages(root) {
-  const spans = root.querySelectorAll?.('.system-message span') || [];
-  for (const span of spans) {
-    if (span.classList.contains('blc-system-name') || span.classList.contains('blc-secondary-name')) {
-      continue;
-    }
-    const box = span.closest('.message-box');
-    const text = stripBidi(span.textContent || '').replace(/\s+/g, ' ').trim();
-    if (JOIN_TEXT.test(text)) {
-      box?.classList.add('blc-hide-join');
-      continue;
-    }
-
-    let original = span.dataset.blcOriginal;
-    let parsed = null;
-    if (original != null) {
-      parsed = parseLobbyLine(original);
-      if (parsed?.kind !== 'leave') continue;
-    } else {
-      parsed = parseLobbyLine(text);
-      if (parsed?.kind !== 'leave') continue;
-      if (!matchAlias(parsed.name)) continue;
-      original = span.textContent;
-      span.dataset.blcOriginal = original;
-    }
-    box?.classList.remove('blc-hide-join');
-    const champ = matchAlias(parsed.name)?.player.championName || '';
-    paintLeaveName(span, original, champ, parsed.verb, parsed.name);
-  }
-}
-
-function stripBidi(s) {
-  return String(s || '').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '');
-}
-
-function riotIdParts(value) {
-  const trimmed = stripBidi(value).trim();
-  const hash = trimmed.indexOf('#');
-  if (hash === -1) return { name: trimmed.toLowerCase(), tag: '' };
-  return {
-    name: trimmed.slice(0, hash).trim().toLowerCase(),
-    tag: trimmed.slice(hash + 1).trim().toLowerCase(),
-  };
-}
-
-function matchAlias(text) {
-  const trimmed = stripBidi(text).trim();
-  if (!trimmed || JOIN_TEXT.test(trimmed)) return null;
-  const lower = trimmed.toLowerCase();
-  for (const entry of nameIndex) {
-    if (entry.name.toLowerCase() === lower) return entry;
-  }
-  const query = riotIdParts(trimmed);
-  if (!query.name) return null;
-  for (const entry of nameIndex) {
-    const alias = riotIdParts(entry.name);
-    if (!alias.name || alias.name !== query.name) continue;
-    if (query.tag && alias.tag && query.tag !== alias.tag) continue;
-    return entry;
-  }
-  return null;
 }

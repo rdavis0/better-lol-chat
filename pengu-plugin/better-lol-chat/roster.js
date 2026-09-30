@@ -1,0 +1,180 @@
+const LOG = '[better-lol-chat]';
+
+const byPuuid = new Map();
+const bySummonerId = new Map();
+let nameIndex = [];
+let roster = [];
+
+export function players() {
+  return roster;
+}
+
+export function aliases() {
+  return nameIndex;
+}
+
+export function clearRoster() {
+  byPuuid.clear();
+  bySummonerId.clear();
+  nameIndex = [];
+  roster = [];
+}
+
+async function lcu(path) {
+  const res = await fetch(path);
+  if (!res.ok) return null;
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+export async function refreshIdentities() {
+  const [me, eog, champs, conversations] = await Promise.all([
+    lcu('/lol-summoner/v1/current-summoner'),
+    lcu('/lol-end-of-game/v1/eog-stats-block'),
+    lcu('/lol-game-data/assets/v1/champion-summary.json'),
+    lcu('/lol-chat/v1/conversations'),
+  ]);
+
+  const champNames = new Map();
+  const champIcons = new Map();
+  for (const c of champs || []) {
+    if (!c || c.id == null) continue;
+    const id = Number(c.id);
+    champNames.set(id, c.name || c.alias);
+    if (c.squarePortraitPath) champIcons.set(id, c.squarePortraitPath);
+  }
+
+  const list = collectPlayers(eog, me, champNames, champIcons);
+  roster = list;
+  byPuuid.clear();
+  bySummonerId.clear();
+  const nextAliases = [];
+
+  for (const player of list) {
+    if (player.puuid) byPuuid.set(String(player.puuid), player);
+    if (player.summonerId != null && player.summonerId !== '' && Number(player.summonerId) !== 0) {
+      bySummonerId.set(String(player.summonerId), player);
+    }
+    for (const alias of player.aliases) {
+      if (alias) nextAliases.push({ name: alias, player });
+    }
+  }
+
+  const postGame = (conversations || []).find((c) => c?.type === 'postGame');
+  const postGameConversationId = postGame?.id || postGame?.pid || null;
+
+  if (postGameConversationId) {
+    const messages = await lcu(
+      `/lol-chat/v1/conversations/${encodeURIComponent(postGameConversationId)}/messages`,
+    );
+    applyJoinRoomMapping(messages || []);
+  }
+
+  nextAliases.sort((a, b) => b.name.length - a.name.length);
+  nameIndex = nextAliases;
+  console.log(LOG, 'mapped', list.length, 'players', { conversation: postGameConversationId });
+}
+
+function collectPlayers(eog, me, champNames, champIcons) {
+  if (!eog) return [];
+  const myPuuid = me?.puuid;
+  const mySummonerId = me?.summonerId;
+  const list = [];
+
+  const push = (raw, allyHint, teamId) => {
+    if (!raw) return;
+    const championId = Number(raw.championId);
+    const championName =
+      champNames.get(championId) ||
+      raw.championName ||
+      (raw.skinName ? String(raw.skinName) : null) ||
+      'Unknown';
+    const iconPath =
+      champIcons.get(championId) ||
+      (championId ? `/lol-game-data/assets/v1/champion-icons/${championId}.png` : '');
+    const playerAliases = unique([
+      raw.riotIdGameName && raw.riotIdTagLine
+        ? `${raw.riotIdGameName}#${raw.riotIdTagLine}`
+        : null,
+      raw.gameName && raw.tagLine ? `${raw.gameName}#${raw.tagLine}` : null,
+      raw.riotIdGameName,
+      raw.gameName,
+      raw.summonerName,
+      raw.displayName,
+      raw.riotId,
+    ]);
+    list.push({
+      puuid: raw.puuid || raw.playerPuuid || null,
+      summonerId: raw.summonerId ?? raw.userId ?? null,
+      teamId: teamId ?? raw.teamId ?? null,
+      championName,
+      iconPath,
+      ally: allyHint,
+      aliases: playerAliases,
+    });
+  };
+
+  if (Array.isArray(eog.teams) && eog.teams.length) {
+    for (const team of eog.teams) {
+      const ally = team.isPlayerTeam === true;
+      for (const p of team.players || []) push(p, ally, p.teamId ?? team.teamId);
+    }
+  }
+
+  if (!list.length) {
+    for (const p of eog.teamPlayerParticipantStats || []) push(p, true, p.teamId);
+    for (const p of eog.otherTeamPlayerParticipantStats || []) push(p, false, p.teamId);
+  }
+
+  const mine = list.find(
+    (p) =>
+      (myPuuid && p.puuid === myPuuid) ||
+      (mySummonerId != null && String(p.summonerId) === String(mySummonerId)),
+  );
+  if (mine) {
+    const myTeam = mine.teamId;
+    const anyAllyHint = list.some((p) => p.ally === true);
+    if (!anyAllyHint && myTeam != null) {
+      for (const p of list) p.ally = String(p.teamId) === String(myTeam);
+    } else {
+      mine.ally = true;
+    }
+  }
+
+  return list;
+}
+
+// Join/leave messages fill a puuid or summoner id the eog block omitted.
+// Name rendering does not read these ids. Champion-ditto disambiguation will.
+function applyJoinRoomMapping(messages) {
+  for (const msg of messages || []) {
+    if (msg?.type !== 'system') continue;
+    if (String(msg.body) !== 'joined_room' && String(msg.body) !== 'left_room') continue;
+    const puuid = msg.fromPuuid && String(msg.fromPuuid);
+    const sid = msg.fromSummonerId;
+    if (!puuid || sid == null || Number(sid) === 0) continue;
+    const player = byPuuid.get(puuid) || bySummonerId.get(String(sid));
+    if (!player) continue;
+    player.puuid = player.puuid || puuid;
+    player.summonerId = player.summonerId || sid;
+    byPuuid.set(puuid, player);
+    bySummonerId.set(String(sid), player);
+  }
+}
+
+function unique(values) {
+  const out = [];
+  const seen = new Set();
+  for (const v of values) {
+    const s = String(v || '').trim();
+    if (!s || seen.has(s.toLowerCase())) continue;
+    seen.add(s.toLowerCase());
+    out.push(s);
+  }
+  return out;
+}

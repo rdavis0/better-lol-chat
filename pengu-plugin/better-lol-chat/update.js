@@ -253,9 +253,10 @@ function numericParts(value) {
 }
 
 function ensureStyle(doc) {
-  if (doc.getElementById(STYLE_ID)) return;
+  const parent = doc.head || doc.documentElement;
+  if (!parent || doc.getElementById(STYLE_ID)) return;
   const style = doc.createElement('style');
   style.id = STYLE_ID;
   style.textContent = STYLE;
-  (doc.head || doc.documentElement).appendChild(style);
+  parent.appendChild(style);
 }

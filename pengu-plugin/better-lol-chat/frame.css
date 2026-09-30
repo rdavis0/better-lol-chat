@@ -86,15 +86,38 @@
   right: 6px;
   top: 50%;
   transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   border: 0;
-  background: transparent none center / contain no-repeat;
-  color: #cbc5b9;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  color: #a09b8c;
   font-size: 14px;
   line-height: 1;
   cursor: pointer;
+}
+
+.blc-options-cog[data-blc-painted] {
+  background-color: var(--blc-cog-rest, #a09b8c);
+}
+
+.blc-options-cog[data-blc-painted]:hover {
+  background-color: #f0e6d2;
+}
+
+.blc-options-cog[data-blc-painted]:active {
+  background-color: #5b5a56;
+}
+
+.blc-options-cog:not([data-blc-painted]):hover {
+  color: #f0e6d2;
+}
+
+.blc-options-cog:not([data-blc-painted]):active {
+  color: #5b5a56;
 }
 
 .blc-credit.blc-credit-hidden {
