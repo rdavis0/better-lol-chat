@@ -1,4 +1,5 @@
-lol-social-chat-room[type='postGame'].blc-messages-unlocked:not(.blc-collapsed) .chat-placeholder-text {
+lol-social-chat-room[type='postGame'].blc-messages-unlocked.focused-chat-box:not(.blc-collapsed) .chat-placeholder-text,
+lol-social-chat-room[type='postGame'].blc-messages-unlocked:not(.blc-collapsed) .focused-chat-box .chat-placeholder-text {
   display: none !important;
 }
 
@@ -31,6 +32,225 @@ lol-social-chat-room[type='postGame'].blc-stretched:not(.blc-collapsed) lol-soci
   flex: 0 0 auto !important;
 }
 
+/* Leading flex item. Width matches the chat window. */
+.scoreboard-header-component.blc-header-shifted > .blc-header-chat-gutter {
+  flex: 0 0 auto;
+  width: var(--blc-header-gutter, 0px);
+  align-self: stretch;
+  pointer-events: none;
+}
+
+.scoreboard-header-component.blc-header-shifted .scoreboard-header-team-name {
+  margin-left: 5px !important;
+}
+
+/* Riot's 500px width would keep the box from sitting against the chat. */
+.scoreboard-header-component.blc-header-shifted > .scoreboard-header-content {
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  flex: 0 0 auto !important;
+}
+
+.scoreboard-header-component.blc-header-shifted > .scoreboard-column-icons-container {
+  flex-shrink: 0;
+}
+
+.blc-options {
+  position: fixed;
+  z-index: 100000;
+  width: min(300px, calc(100vw - 12px));
+  height: 480px;
+  max-height: calc(100vh - 16px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  text-align: left;
+  font-weight: 400;
+  color: #f0e6c8;
+  background: #0a0618;
+  border: 1px solid #3a2a08;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 55%);
+}
+
+.blc-options[hidden] {
+  display: none !important;
+}
+
+.blc-options-body {
+  overflow: auto;
+  min-height: 0;
+  padding: 8px 8px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #785a28 transparent;
+}
+
+.blc-options-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.blc-options-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.blc-options-body::-webkit-scrollbar-thumb {
+  background: #785a28;
+}
+
+.blc-options-body::-webkit-scrollbar-thumb:hover {
+  background: #c8aa6e;
+}
+
+.blc-options-disclaimer {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px;
+  border-top: 1px solid #3a2a08;
+  font-size: 8px;
+  line-height: 1.35;
+  font-weight: 400;
+  color: #b7a98a;
+}
+
+.blc-switch,
+.blc-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  font-size: 12px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.blc-switch input,
+.blc-choice input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+}
+
+.blc-switch-ui {
+  position: relative;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;
+  background: #3a2a08;
+}
+
+.blc-switch-ui::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #b7a98a;
+}
+
+.blc-switch input:checked + .blc-switch-ui {
+  background: #6b5310;
+}
+
+.blc-switch input:checked + .blc-switch-ui::after {
+  transform: translateX(12px);
+  background: #ffd700;
+}
+
+.blc-switch input:focus-visible + .blc-switch-ui,
+.blc-choice input:focus-visible + .blc-choice-ui {
+  outline: 1px solid #ffd700;
+}
+
+.blc-choice-ui {
+  position: relative;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #b7a98a;
+  border-radius: 50%;
+  background: #3a2a08;
+}
+
+.blc-choice input:checked + .blc-choice-ui {
+  border-color: #ffd700;
+  background: #6b5310;
+}
+
+.blc-choice input:checked + .blc-choice-ui::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffd700;
+}
+
+.blc-color-disabled {
+  opacity: 0.4;
+}
+
+.blc-options-heading {
+  margin: 8px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #ffd700;
+}
+
+.blc-color-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.blc-color-row > span {
+  width: 48px;
+  flex: 0 0 auto;
+}
+
+.blc-color-row input[type='color'] {
+  width: 28px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #5a4a20;
+  background: transparent;
+  cursor: pointer;
+}
+
+.blc-color-row input[type='text'] {
+  width: 74px;
+  box-sizing: border-box;
+  font: inherit;
+  color: inherit;
+  background: #160e28;
+  border: 1px solid #5a4a20;
+  padding: 2px 4px;
+}
+
+.blc-color-reset {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent none center / contain no-repeat;
+  color: #ffd700;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 /* Drop the red inset top shadow on the focused post-game chat chrome. */
 lol-social-chat-room[type='postGame'].scoreboard-v2.focused-chat-box:not(.chat-room-disabled)::after,
 lol-social-chat-room[type='postGame'].focused-chat-box:not(.chat-room-disabled)::after,
@@ -45,19 +265,63 @@ lol-social-chat-room[type='postGame'] .shadow-effect {
   border-radius: 2px;
 }
 
-/* Vanilla dims not-in-chat splash to 0.5; we go darker and match champ icons. */
-.scoreboard-row-component.not-in-chat
+/* Vanilla dims not-in-chat splash to 0.5; with the toggle on, also fade champ icons. */
+html.blc-strong-dim .scoreboard-row-component.not-in-chat
   .scoreboard-row-player-details-container
   .scoreboard-row-skin-background,
-.scoreboard-row-component.not-in-chat
+html.blc-strong-dim .scoreboard-row-component.not-in-chat
   .scoreboard-row-player-details-container
   .scoreboard-row-skin-background-strawberry,
-.scoreboard-row-component.not-in-chat
+html.blc-strong-dim .scoreboard-row-component.not-in-chat
   .scoreboard-row-player-details-container
   .scoreboard-row-skin-background-jade,
-.scoreboard-row-component.not-in-chat > .blc-row-champ,
-.strawberry-scoreboard-row-component.not-in-chat > .blc-row-champ,
-.jade-scoreboard-row-component.not-in-chat > .blc-row-champ {
+html.blc-strong-dim .scoreboard-row-component.not-in-chat > .blc-row-champ,
+html.blc-strong-dim .strawberry-scoreboard-row-component.not-in-chat > .blc-row-champ,
+html.blc-strong-dim .jade-scoreboard-row-component.not-in-chat > .blc-row-champ {
   opacity: 0.5;
   filter: grayscale(0.75);
+}
+
+.blc-collapse-tip {
+  position: fixed;
+  z-index: 100001;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 400;
+  color: #f0e6c8;
+  background: #0a0618;
+  border: 1px solid #c8aa6e;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 55%);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.blc-collapse-tip[hidden] {
+  display: none !important;
+}
+
+.blc-collapse-tip::after {
+  content: '';
+  position: absolute;
+  left: var(--blc-tip-arrow, 50%);
+  bottom: -5px;
+  width: 8px;
+  height: 8px;
+  transform: translateX(-50%) rotate(45deg);
+  background: #0a0618;
+  border-right: 1px solid #c8aa6e;
+  border-bottom: 1px solid #c8aa6e;
+}
+
+.blc-collapse-tip-below::after {
+  bottom: auto;
+  top: -5px;
+  border-right: 0;
+  border-bottom: 0;
+  border-top: 1px solid #c8aa6e;
+  border-left: 1px solid #c8aa6e;
 }

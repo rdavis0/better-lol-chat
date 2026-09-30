@@ -27,15 +27,23 @@
   color: var(--blc-name-mine) !important;
 }
 
-.message-box.my-team .message {
+.blc-secondary-name {
+  margin-left: 0.35em;
+}
+
+.message-name .blc-secondary-name {
+  opacity: 0.72;
+}
+
+.blc-tint-bodies .message-box.my-team .message {
   color: var(--blc-message-ally) !important;
 }
 
-.message-box.other-team .message {
+.blc-tint-bodies .message-box.other-team .message {
   color: var(--blc-message-enemy) !important;
 }
 
-.message-box.mine .message {
+.blc-tint-bodies .message-box.mine .message {
   color: var(--blc-message-mine) !important;
 }
 
@@ -55,14 +63,39 @@
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0 !important;
-  padding: 4px 0px 6px;
+  padding: 4px 28px 6px;
   color: var(--blc-credit) !important;
   font-weight: 700 !important;
   background-image: linear-gradient(to bottom, var(--blc-credit-bg), rgb(1 10 19 / 95%));
   width: 100% !important;
-  text-align: center;
+  overflow: visible;
   box-sizing: border-box;
+}
+
+.blc-credit-label {
+  pointer-events: none;
+}
+
+.blc-options-cog {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent none center / contain no-repeat;
+  color: var(--blc-credit);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  color: #cbc5b9;
 }
 
 .blc-credit.blc-credit-hidden {

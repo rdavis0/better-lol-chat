@@ -37,6 +37,8 @@ Persistence uses the League client’s `localStorage` under a namespaced key (fo
 - [ ] **Automatically open chat** — current keep-open behavior on the scoreboard. Off leaves Riot’s click-outside collapse.
 - [ ] **Automatically focus chat** — put the caret in the input when chat opens. Do not use `textarea.focus()` until a capture shows a way that does not scroll the whole client.
 - [ ] Load / save the toggle set via `localStorage` (merge with defaults on load)
+- [x] **Check for updates** — above the Riot disclaimer. Compares `VERSION` to the latest GitHub release and links to it when a newer one is published. The standalone app / installer copies the new files.
+- [ ] **Report a bug** — link in the options menu, next to the update check. Opens a form so the reporter does not need a GitHub account. Prefill the plugin version. If the client blocks the new window, show the URL the same way the release link does.
 
 ### Pre-game chat
 Not started. Post-game was the prototype because champion mapping comes from the end-of-game stats block, which does not exist in champ select or the lobby. Pre-game needs its own room type, its own player list (picks change during select), and a DOM capture before the same toggles can apply.
