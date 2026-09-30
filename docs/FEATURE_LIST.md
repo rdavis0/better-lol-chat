@@ -2,7 +2,7 @@
 
 Unofficial post-game chat improvements. One product name, two packages:
 
-- **Client Package** — Pengu plugin that changes Riot's existing screen. Source folder is still `pengu-plugin/better-postgame-chat/` until that directory is renamed.
+- **Client Package** — Pengu plugin that changes Riot's existing screen. Source: `pengu-plugin/better-lol-chat/`.
 - **Standalone App** — separate window. Same name. "Plus" stays the premium tier inside this app, not a second product name.
 
 Status tracks implementation.
@@ -16,8 +16,8 @@ Status tracks implementation.
 - [x] Keep “left the lobby” rows, with the champion name colored by team and the rest of the line gray
 - [x] Keep chat open on click-outside / blur (vs vanilla collapse)
 - [x] Repurpose `.chat-toggle-button` to collapse/expand the full chat window
-- [x] Local gold credit line when post-game chat loads: `better-lol-chat {VERSION} by wryguy`
-- [x] Plugin version constant (`VERSION` in `index.js`); credit line + one console log on load
+- [x] Local gold credit line when post-game chat loads: `better-lol-chat by wryguy`
+- [x] Plugin version constant (`VERSION` in `index.js`); one console log on load, and the version on the options update row
 - [x] Champion icons in the scoreboard gap between items and the KDA column
 
 ## Planned — client (Pengu)

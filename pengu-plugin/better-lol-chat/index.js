@@ -28,6 +28,8 @@ let collapseTipDismissed = false;
 let applying = false;
 let chatRoom = null;
 let focusClassObserver = null;
+let focusWatchRoom = null;
+let focusWatchBox = null;
 let chatBottomViewport = 0;
 let onScoreboard = false;
 let wasOnScoreboard = false;
@@ -184,6 +186,12 @@ function onPhase(phase) {
     bySummonerId.clear();
     nameIndex = [];
     roster = [];
+    if (focusClassObserver) {
+      focusClassObserver.disconnect();
+      focusClassObserver = null;
+    }
+    focusWatchRoom = null;
+    focusWatchBox = null;
     clearScoreboardIcons();
     closeOptions();
     if (collapseTipVisible) dismissCollapseTip();
@@ -331,6 +339,8 @@ function collectPlayers(eog, me, champNames, champIcons) {
   return list;
 }
 
+// Join/leave messages fill a puuid or summoner id the eog block omitted.
+// Name rendering does not read these ids. Champion-ditto disambiguation will.
 function applyJoinRoomMapping(messages) {
   for (const msg of messages || []) {
     if (msg?.type !== 'system') continue;
@@ -360,13 +370,7 @@ function unique(values) {
 }
 
 function findPostGameRoom() {
-  return (
-    document.querySelector(ROOM_SEL) ||
-    [...document.querySelectorAll('lol-social-chat-room')].find(
-      (el) => el.getAttribute('type') === 'postGame',
-    ) ||
-    null
-  );
+  return document.querySelector(ROOM_SEL);
 }
 
 function getChatBox(room) {
@@ -430,11 +434,12 @@ function withFrozenScroll(fn) {
 
 function watchFocusClass(room) {
   if (!room) return;
-  if (focusClassObserver) {
-    focusClassObserver.disconnect();
-    focusClassObserver = null;
-  }
-  const targets = [room, getChatBox(room)].filter(Boolean);
+  const box = getChatBox(room);
+  if (focusClassObserver && focusWatchRoom === room && focusWatchBox === box) return;
+  if (focusClassObserver) focusClassObserver.disconnect();
+  focusWatchRoom = room;
+  focusWatchBox = box;
+  const targets = box && box !== room ? [room, box] : [room];
   focusClassObserver = new MutationObserver(() => {
     if (!inPostGame || !onScoreboard) return;
     if (windowCollapsed) {
@@ -478,40 +483,27 @@ function ensureOpen() {
   watchFocusClass(room);
   ensurePlayerMessagesVisible(room);
 
-  if (!onScoreboard) {
-    syncCredit(room);
+  if (onScoreboard) {
+    if (windowCollapsed) {
+      clearStretch(room);
+      room.classList.add(COLLAPSED_CLASS);
+      updateCollapsePlaceholder(room, true);
+      withFrozenScroll(() => clearFocusedClass(room));
+    } else if (!settings.autoOpen && !isChatOpen(room)) {
+      clearStretch(room);
+    } else {
+      room.classList.remove(COLLAPSED_CLASS);
+      updateCollapsePlaceholder(room, false);
+      if (settings.autoOpen) withFrozenScroll(() => forceFocusedClass(room));
+      if (settings.tallerChat) stretchChat(room);
+      else clearStretch(room);
+      placeOptionsPanel();
+    }
+    placeScoreboardIcons();
+  } else {
     clearScoreboardIcons();
-    syncCollapseTip(room);
-    return;
   }
-
-  if (windowCollapsed) {
-    clearStretch(room);
-    room.classList.add(COLLAPSED_CLASS);
-    updateCollapsePlaceholder(room, true);
-    withFrozenScroll(() => clearFocusedClass(room));
-    syncCredit(room);
-    placeScoreboardIcons();
-    syncCollapseTip(room);
-    return;
-  }
-
-  if (!settings.autoOpen && !isChatOpen(room)) {
-    clearStretch(room);
-    syncCredit(room);
-    placeScoreboardIcons();
-    syncCollapseTip(room);
-    return;
-  }
-
-  room.classList.remove(COLLAPSED_CLASS);
-  updateCollapsePlaceholder(room, false);
-  if (settings.autoOpen) withFrozenScroll(() => forceFocusedClass(room));
-  if (settings.tallerChat) stretchChat(room);
-  else clearStretch(room);
   syncCredit(room);
-  placeScoreboardIcons();
-  placeOptionsPanel();
   syncCollapseTip(room);
 }
 
@@ -652,11 +644,10 @@ function scoreboardIsShowing() {
   return true;
 }
 
-function firstTeamContainer() {
-  const nodes = document.querySelectorAll('.scoreboard-team-container');
+function topmostVisible(selector) {
   let best = null;
   let bestTop = Infinity;
-  for (const el of nodes) {
+  for (const el of document.querySelectorAll(selector)) {
     const rect = el.getBoundingClientRect();
     if (rect.height < 1 || rect.width < 1) continue;
     if (rect.top < bestTop) {
@@ -665,6 +656,10 @@ function firstTeamContainer() {
     }
   }
   return best;
+}
+
+function firstTeamContainer() {
+  return topmostVisible('.scoreboard-team-container');
 }
 
 function clearStretch(room) {
@@ -716,18 +711,7 @@ function stretchChat(room) {
 }
 
 function playerTeamHeader() {
-  const nodes = document.querySelectorAll('.scoreboard-header-component.is-player-team');
-  let best = null;
-  let bestTop = Infinity;
-  for (const el of nodes) {
-    const rect = el.getBoundingClientRect();
-    if (rect.height < 1 || rect.width < 1) continue;
-    if (rect.top < bestTop) {
-      bestTop = rect.top;
-      best = el;
-    }
-  }
-  return best;
+  return topmostVisible('.scoreboard-header-component.is-player-team');
 }
 
 function visibleScoreboardHeaders() {
@@ -744,7 +728,6 @@ function clearHeaderShift() {
   document.querySelectorAll('.blc-header-chat-gutter').forEach((el) => el.remove());
   document.querySelectorAll('.scoreboard-header-component.blc-header-shifted').forEach((el) => {
     el.classList.remove('blc-header-shifted');
-    el.style.removeProperty('--blc-header-gutter');
   });
   document.querySelectorAll('.scoreboard-header-content').forEach((content) => {
     content.style.removeProperty('width');
@@ -756,12 +739,12 @@ function clearHeaderShift() {
 
 function releaseHeaderContentWidth(header) {
   const content = header.querySelector(':scope > .scoreboard-header-content');
-  if (!content) return null;
+  if (!content) return;
+  // Inline !important beats Riot's fixed 500px header width.
   content.style.setProperty('width', 'max-content', 'important');
   content.style.setProperty('min-width', '0', 'important');
   content.style.setProperty('max-width', 'none', 'important');
   content.style.setProperty('flex', '0 0 auto', 'important');
-  return content;
 }
 
 function viewportToCss(el, viewportPx) {
@@ -788,7 +771,6 @@ function setHeaderGutter(headers, px) {
   for (const header of headers) {
     const gutter = ensureHeaderGutter(header);
     gutter.style.setProperty('width', value, 'important');
-    setVar(header, '--blc-header-gutter', value);
   }
 }
 
@@ -1091,13 +1073,12 @@ function enhance() {
     if (doc) {
       injectFrameStyles(doc);
       insertCredit(doc);
-      // Class before name rewrite: Riot IDs still match aliases. groupchat rows
-      // often ship with fromSummonerId 0, so the client marks allies as other-team.
-      fixTeamClasses(doc);
       rewriteNames(doc);
       rewriteLobbyMessages(doc);
+      // Stored Riot IDs (data-blc-original) still match after the visible text
+      // becomes a champion name. groupchat rows often ship with fromSummonerId 0,
+      // so the client marks allies as other-team.
       fixTeamClasses(doc);
-      syncCredit(room);
     }
   } catch (err) {
     console.warn(LOG, err);
@@ -1195,17 +1176,17 @@ function nameStyleFrom(showSummoner, showChampion) {
   return 'champion';
 }
 
-function applyNameStyle(style, target = settings) {
-  const next = style === 'summoner' || style === 'both' || style === 'champion' ? style : 'champion';
-  target.nameStyle = next;
-  target.showSummonerNames = next === 'summoner' || next === 'both';
-  target.showChampionNames = next === 'champion' || next === 'both';
+function showsSummoner() {
+  return settings.nameStyle === 'summoner' || settings.nameStyle === 'both';
 }
+
+function showsChampion() {
+  return settings.nameStyle === 'champion' || settings.nameStyle === 'both';
+}
+
 function loadSettings() {
   const next = {
     tallerChat: true,
-    showSummonerNames: false,
-    showChampionNames: true,
     nameStyle: 'champion',
     coloredBodies: true,
     strongDim: true,
@@ -1220,14 +1201,16 @@ function loadSettings() {
     }
     if (typeof saved.coloredBodies === 'boolean') next.coloredBodies = saved.coloredBodies;
     if (saved.nameStyle === 'summoner' || saved.nameStyle === 'champion' || saved.nameStyle === 'both') {
-      applyNameStyle(saved.nameStyle, next);
+      next.nameStyle = saved.nameStyle;
     } else {
-      if (typeof saved.showSummonerNames === 'boolean') next.showSummonerNames = saved.showSummonerNames;
-      else if (typeof saved.championNames === 'boolean') next.showSummonerNames = !saved.championNames;
-      if (typeof saved.showChampionNames === 'boolean') next.showChampionNames = saved.showChampionNames;
-      else if (typeof saved.championNames === 'boolean') next.showChampionNames = saved.championNames;
-      if (!next.showSummonerNames && !next.showChampionNames) next.showChampionNames = true;
-      applyNameStyle(nameStyleFrom(next.showSummonerNames, next.showChampionNames), next);
+      let showSummoner = false;
+      let showChampion = true;
+      if (typeof saved.showSummonerNames === 'boolean') showSummoner = saved.showSummonerNames;
+      else if (typeof saved.championNames === 'boolean') showSummoner = !saved.championNames;
+      if (typeof saved.showChampionNames === 'boolean') showChampion = saved.showChampionNames;
+      else if (typeof saved.championNames === 'boolean') showChampion = saved.championNames;
+      if (!showSummoner && !showChampion) showChampion = true;
+      next.nameStyle = nameStyleFrom(showSummoner, showChampion);
     }
     if (saved.colors && typeof saved.colors === 'object') {
       for (const key of Object.keys(COLOR_DEFAULTS)) {
@@ -1412,7 +1395,7 @@ function appendNameChoices(body, doc) {
     input.checked = settings.nameStyle === value;
     input.addEventListener('change', () => {
       if (!input.checked) return;
-      applyNameStyle(value);
+      settings.nameStyle = value;
       commitSettings();
     });
     const span = doc.createElement('span');
@@ -1633,6 +1616,7 @@ function syncChatScrollbar(frameDoc) {
 }
 
 function insertCredit(doc) {
+  applyFrameSettings(doc);
   const host = doc.documentElement || doc.body;
   if (!host) return;
   let el = doc.getElementById('blc-credit');
@@ -1647,7 +1631,6 @@ function insertCredit(doc) {
   } else paintCog(el.querySelector('.blc-options-cog'));
   if (el.parentElement !== host) host.appendChild(el);
   applyCreditFont(doc, el);
-  applyFrameSettings(doc);
   syncChatScrollbar(doc);
   syncCredit(chatRoom);
 
@@ -1692,7 +1675,6 @@ function syncCredit(room = chatRoom) {
 }
 
 function injectFrameStyles(doc) {
-  applyFrameSettings(doc);
   let style = doc.getElementById('blc-frame-style');
   if (!style) {
     style = doc.createElement('style');
@@ -1707,11 +1689,11 @@ function summonerLabel(originalText) {
 }
 
 function paintChatName(el, original, champ) {
-  if (!settings.showChampionNames || !champ) {
+  if (!showsChampion() || !champ) {
     if (stripBidi(el.textContent) !== stripBidi(original)) el.textContent = original;
     return;
   }
-  if (!settings.showSummonerNames) {
+  if (!showsSummoner()) {
     if (el.childElementCount || el.textContent !== champ) el.textContent = champ;
     return;
   }
@@ -1755,6 +1737,17 @@ function rewriteNames(root) {
 }
 
 const LEAVE_TEXT = /^(.*?)\s+(left(?:\s+the)?\s+(?:room|lobby))\s*$/i;
+const JOIN_LINE = /^(.*?)\s+joined(?:\s+the)?\s+(?:room|lobby)\s*$/i;
+
+function parseLobbyLine(text) {
+  const normalized = stripBidi(text).replace(/\s+/g, ' ').trim();
+  if (!normalized) return null;
+  const leave = normalized.match(LEAVE_TEXT);
+  if (leave) return { kind: 'leave', name: leave[1].trim(), verb: leave[2] };
+  const join = normalized.match(JOIN_LINE);
+  if (join) return { kind: 'join', name: join[1].trim() };
+  return null;
+}
 
 function fixTeamClasses(root) {
   if (!roster.length && !nameIndex.length) return;
@@ -1786,11 +1779,8 @@ function speakerForBox(box) {
   if (!span) return null;
 
   if (span.dataset?.blcOriginal) {
-    const stored = stripBidi(span.dataset.blcOriginal).replace(/\s+/g, ' ').trim();
-    const storedLeave = stored.match(LEAVE_TEXT);
-    if (storedLeave) return resolvePlayer(storedLeave[1].trim());
-    const storedJoin = stored.match(/^(.*?)\s+joined(?:\s+the)?\s+(?:room|lobby)\s*$/i);
-    if (storedJoin) return resolvePlayer(storedJoin[1].trim());
+    const stored = parseLobbyLine(span.dataset.blcOriginal);
+    if (stored) return resolvePlayer(stored.name);
   }
 
   const champEl = span.querySelector?.('.blc-system-name');
@@ -1799,13 +1789,8 @@ function speakerForBox(box) {
     if (fromChamp) return fromChamp;
   }
 
-  const text = stripBidi(span.textContent || '').replace(/\s+/g, ' ').trim();
-  const leave = text.match(LEAVE_TEXT);
-  if (leave) return resolvePlayer(leave[1].trim());
-
-  const join = text.match(/^(.*?)\s+joined(?:\s+the)?\s+(?:room|lobby)\s*$/i);
-  if (join) return resolvePlayer(join[1].trim());
-
+  const parsed = parseLobbyLine(span.textContent || '');
+  if (parsed) return resolvePlayer(parsed.name);
   return null;
 }
 
@@ -1827,13 +1812,13 @@ function resolvePlayer(text) {
 }
 
 function paintLeaveName(span, original, champ, verb, summonerName) {
-  if (!settings.showChampionNames || !champ) {
+  if (!showsChampion() || !champ) {
     if (stripBidi(span.textContent) !== stripBidi(original)) span.textContent = original;
     return;
   }
   const doc = span.ownerDocument;
   const nameEl = span.querySelector(':scope > .blc-system-name');
-  if (!settings.showSummonerNames) {
+  if (!showsSummoner()) {
     const tail = span.childNodes[1];
     if (
       nameEl?.textContent === champ &&
@@ -1875,11 +1860,7 @@ function paintLeaveName(span, original, champ, verb, summonerName) {
 function rewriteLobbyMessages(root) {
   const spans = root.querySelectorAll?.('.system-message span') || [];
   for (const span of spans) {
-    if (
-      span.classList.contains('blc-system-name') ||
-      span.classList.contains('blc-secondary-name') ||
-      span.classList.contains('blc-summoner-name')
-    ) {
+    if (span.classList.contains('blc-system-name') || span.classList.contains('blc-secondary-name')) {
       continue;
     }
     const box = span.closest('.message-box');
@@ -1890,28 +1871,20 @@ function rewriteLobbyMessages(root) {
     }
 
     let original = span.dataset.blcOriginal;
-    let champ = '';
-    let verb = '';
-    let summonerName = '';
+    let parsed = null;
     if (original != null) {
-      const stored = stripBidi(original).replace(/\s+/g, ' ').trim();
-      const storedLeave = stored.match(LEAVE_TEXT);
-      if (!storedLeave) continue;
-      verb = storedLeave[2];
-      summonerName = storedLeave[1].trim();
-      champ = matchAlias(summonerName)?.player.championName || '';
+      parsed = parseLobbyLine(original);
+      if (parsed?.kind !== 'leave') continue;
     } else {
-      const leave = text.match(LEAVE_TEXT);
-      if (!leave) continue;
-      if (!matchAlias(leave[1].trim())) continue;
+      parsed = parseLobbyLine(text);
+      if (parsed?.kind !== 'leave') continue;
+      if (!matchAlias(parsed.name)) continue;
       original = span.textContent;
       span.dataset.blcOriginal = original;
-      verb = leave[2];
-      summonerName = leave[1].trim();
-      champ = matchAlias(summonerName)?.player.championName || '';
     }
     box?.classList.remove('blc-hide-join');
-    paintLeaveName(span, original, champ, verb, summonerName);
+    const champ = matchAlias(parsed.name)?.player.championName || '';
+    paintLeaveName(span, original, champ, parsed.verb, parsed.name);
   }
 }
 
@@ -1919,23 +1892,30 @@ function stripBidi(s) {
   return String(s || '').replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '');
 }
 
+function riotIdParts(value) {
+  const trimmed = stripBidi(value).trim();
+  const hash = trimmed.indexOf('#');
+  if (hash === -1) return { name: trimmed.toLowerCase(), tag: '' };
+  return {
+    name: trimmed.slice(0, hash).trim().toLowerCase(),
+    tag: trimmed.slice(hash + 1).trim().toLowerCase(),
+  };
+}
+
 function matchAlias(text) {
   const trimmed = stripBidi(text).trim();
+  if (!trimmed || JOIN_TEXT.test(trimmed)) return null;
+  const lower = trimmed.toLowerCase();
   for (const entry of nameIndex) {
-    if (trimmed === entry.name) return entry;
-    if (trimmed.toLowerCase() === entry.name.toLowerCase()) return entry;
-    const beforeHash = trimmed.split('#')[0].trim();
-    const entryBeforeHash = entry.name.split('#')[0].trim();
-    if (beforeHash && beforeHash.toLowerCase() === entryBeforeHash.toLowerCase()) {
-      return entry;
-    }
-    if (
-      trimmed.startsWith(entry.name) &&
-      /[:：]/.test(trimmed.slice(entry.name.length, entry.name.length + 2))
-    ) {
-      return entry;
-    }
-    if (trimmed.startsWith(entry.name + ' ') && JOIN_TEXT.test(trimmed)) return null;
+    if (entry.name.toLowerCase() === lower) return entry;
+  }
+  const query = riotIdParts(trimmed);
+  if (!query.name) return null;
+  for (const entry of nameIndex) {
+    const alias = riotIdParts(entry.name);
+    if (!alias.name || alias.name !== query.name) continue;
+    if (query.tag && alias.tag && query.tag !== alias.tag) continue;
+    return entry;
   }
   return null;
 }

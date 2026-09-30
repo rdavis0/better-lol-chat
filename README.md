@@ -12,12 +12,12 @@ Planned client and companion work, including emoji input in the standalone app o
 
 ## Install
 
-Plugin source: `pengu-plugin/better-postgame-chat/`
+Plugin source: `pengu-plugin/better-lol-chat/`
 
 Copy into:
 
 ```text
-C:\Program Files\Pengu Loader\plugins\better-postgame-chat
+C:\Program Files\Pengu Loader\plugins\better-lol-chat
 ```
 
-Restart League (Pengu active). Console should show `[better-lol-chat] v0.1`.
+Restart League (Pengu active). Console should show `[better-lol-chat] v0.2`.

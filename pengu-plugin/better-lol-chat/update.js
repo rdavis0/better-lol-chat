@@ -56,7 +56,7 @@ const STYLE = `
 let cached = null;
 let pending = null;
 
-export function compareVersions(a, b) {
+function compareVersions(a, b) {
   const pa = numericParts(a);
   const pb = numericParts(b);
   const len = Math.max(pa.length, pb.length);
@@ -210,7 +210,7 @@ async function fetchRelease() {
   return res.json();
 }
 
-export function describeRelease(version, release) {
+function describeRelease(version, release) {
   if (!release) {
     return { status: 'No release published yet', url: '' };
   }
