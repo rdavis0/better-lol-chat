@@ -12,10 +12,10 @@ import {
 import { refreshIdentities, clearRoster, players, seedRoster } from './roster.js';
 import { rewriteMessages, matchAlias, stripBidi, isJoinNotice } from './messages.js';
 import { installSampleCommands } from './sample.js';
-import { mountUpdateNotice } from './update.js';
+import { beginPostGameUpdateCheck, mountUpdateNotice } from './update.js';
 
 const LOG = '[better-lol-chat]';
-const VERSION = '0.7';
+const VERSION = '0.8';
 const CREDIT_TEXT = `better-lol-chat by wryguy`;
 const POSTGAME_PHASES = new Set([
   'WaitingForStats',
@@ -166,6 +166,7 @@ function onPhase(phase) {
     closeOptions();
     return;
   }
+  beginPostGameUpdateCheck(VERSION);
   windowCollapsed = false;
   refreshIdentities()
     .then(() => {
@@ -458,6 +459,10 @@ const MID_ROW = 'blc-mid-row';
 let midRowSizes = new WeakMap();
 const midRowInline = new WeakMap();
 const midRowTouched = new Set();
+let runeGap = new WeakMap();
+const RUNE_GAP = 4;
+const RUNE_SEL =
+  '.scoreboard-row-keystone-alignment-container, .strawberry-scoreboard-row-keystone-alignment-container, .jade-scoreboard-row-keystone-alignment-container';
 let levelSlot = 0;
 let levelSlotKey = '';
 
@@ -483,8 +488,10 @@ function clearScoreboardIcons() {
     el.style.flexBasis = saved.flexBasis;
     el.style.minWidth = saved.minWidth;
     el.style.maxWidth = saved.maxWidth;
+    el.style.marginLeft = saved.marginLeft;
   }
   midRowTouched.clear();
+  runeGap = new WeakMap();
   midRowSizes = new WeakMap();
   levelSlot = 0;
   levelSlotKey = '';
@@ -521,6 +528,7 @@ function rememberMidRowInline(el) {
       flexBasis: el.style.flexBasis,
       minWidth: el.style.minWidth,
       maxWidth: el.style.maxWidth,
+      marginLeft: el.style.marginLeft,
     });
   }
   midRowTouched.add(el);
@@ -546,6 +554,19 @@ function applyOuterWidth(el, outer) {
   el.style.width = px;
   el.style.minWidth = px;
   el.style.maxWidth = px;
+}
+
+function tightenRuneGap(key) {
+  const align = key?.querySelector(RUNE_SEL);
+  if (!align) return 0;
+  let original = runeGap.get(align);
+  if (original == null) {
+    original = parseFloat(getComputedStyle(align).marginLeft) || 0;
+    runeGap.set(align, original);
+    rememberMidRowInline(align);
+  }
+  if (original > RUNE_GAP) align.style.marginLeft = RUNE_GAP + 'px';
+  return Math.max(0, original - RUNE_GAP);
 }
 
 function captureMidRowSizes(row, content) {
@@ -641,10 +662,11 @@ function placeScoreboardIcons() {
 
     const boxStyle = getComputedStyle(box);
     const badgeWidth = box.offsetWidth + parseFloat(boxStyle.marginLeft) + parseFloat(boxStyle.marginRight);
+    const runeSpace = tightenRuneGap(key);
     applyOuterWidth(content.querySelector(DETAILS_SEL), sizes.details);
     applyOuterWidth(row.querySelector(CONTROLS_SEL), sizes.controls);
     applyOuterWidth(content.querySelector(ACTIONS_SEL), sizes.actions);
-    applyOuterWidth(content.querySelector(ITEMS_SEL), Math.max(0, sizes.items - badgeWidth));
+    applyOuterWidth(content.querySelector(ITEMS_SEL), Math.max(0, sizes.items - badgeWidth + runeSpace));
     seen.add(box);
   }
   document.querySelectorAll('.' + MID_ROW).forEach((el) => {
@@ -1004,7 +1026,7 @@ function enhance() {
       injectFrameStyles(doc);
       insertCredit(doc);
       rewriteMessages(doc);
-      mountUpdateNotice(doc, VERSION);
+      mountUpdateNotice(doc);
     }
   } catch (err) {
     console.warn(LOG, err);
