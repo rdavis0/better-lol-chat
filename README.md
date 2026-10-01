@@ -20,7 +20,7 @@ Unofficial Pengu Loader plugin that improves League of Legends **post-game chat*
 
 ## Install
 
-Install [Pengu Loader](https://pengu.lol/) and turn it on once.
+**Required dependency:** Install [Pengu Loader](https://pengu.lol/) and turn it on once.
 
 ### Via Installer
 
@@ -32,7 +32,9 @@ Download [install.bat](https://github.com/rdavis0/better-lol-chat/releases/lates
 2. Extract the `better-lol-chat` folder into Pengu's `plugins` folder. Default location is  `C:\Program Files\Pengu Loader\plugins\`.
 3. Restart League (Ctrl + R in the client)
 
-That's it! Enjoy flaming your teammates with a superior chat experience! If you want to verify the plugin is running, in the client, press `Ctrl + Shift + I` and open the console. It should show `[better-lol-chat]` followed by the version.
+That's it! Enjoy flaming your teammates with a superior chat experience! 
+
+If you want to verify the plugin is running: in the client, press `Ctrl + Shift + I` and open the console. It should show `[better-lol-chat]` followed by the version.
 
 ## Demo
 Chat too quiet? You can inject sample messages (only you will see them) by typing `/demo` or `/sample` in the post-game chat. 
