@@ -1,5 +1,9 @@
+import { settings, saveSettings } from './settings.js';
+import { showUpdateDialog } from './update-dialog.js';
+
+const REPO_URL = 'https://github.com/rdavis0/better-lol-chat';
 const RELEASES_URL = 'https://api.github.com/repos/rdavis0/better-lol-chat/releases/latest';
-const INSTALL_URL = 'https://github.com/rdavis0/better-lol-chat/releases/latest/download/install.bat';
+const SAFE_TAG = /^[\w.+-]+$/;
 const STYLE_ID = 'blc-update-style';
 
 const STYLE = `
@@ -91,37 +95,24 @@ function createUpdateRow(doc, version) {
   status.className = 'blc-update-status';
   status.setAttribute('aria-live', 'polite');
 
-  const link = doc.createElement('a');
+  const link = doc.createElement('button');
+  link.type = 'button';
   link.className = 'blc-update-link';
   link.hidden = true;
-  link.target = '_blank';
-  link.rel = 'noreferrer';
-  link.textContent = 'Download';
+  link.textContent = "What's new";
 
   line.append(ver, status, link);
   root.append(line);
 
-  const paint = (next) => {
-    status.textContent = next.status;
-    if (next.url) {
-      link.hidden = false;
-      link.href = next.url;
-    } else {
-      link.hidden = true;
-      link.removeAttribute('href');
-    }
-  };
-
   link.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
-    if (!link.href) return;
-    openDownload();
+    openUpdateFor(cached);
   });
 
   statusRoot = root;
-  if (cached) paint(cached);
-  else if (checkGen) paint({ status: 'Checking…', url: '' });
+  if (cached) applyStatus(root, cached);
+  else if (checkGen) applyStatus(root, { status: 'Checking…' });
 
   return root;
 }
@@ -129,7 +120,7 @@ function createUpdateRow(doc, version) {
 export function beginPostGameUpdateCheck(version) {
   const gen = ++checkGen;
   cached = null;
-  paintStatus({ status: 'Checking…', url: '' });
+  paintStatus({ status: 'Checking…' });
   fetchRelease()
     .then((release) => {
       if (gen !== checkGen) return;
@@ -139,26 +130,22 @@ export function beginPostGameUpdateCheck(version) {
     })
     .catch(() => {
       if (gen !== checkGen) return;
-      cached = { status: "Couldn't check for updates", url: '' };
+      cached = { status: "Couldn't check for updates" };
       paintNotice();
       paintStatus(cached);
     });
 }
 
 function paintStatus(next) {
-  const root = statusRoot;
-  if (!root?.isConnected) return;
+  if (statusRoot?.isConnected) applyStatus(statusRoot, next);
+}
+
+function applyStatus(root, next) {
   const status = root.querySelector('.blc-update-status');
   const link = root.querySelector('.blc-update-link');
   if (!status || !link) return;
   status.textContent = next.status;
-  if (next.url) {
-    link.hidden = false;
-    link.href = next.url;
-  } else {
-    link.hidden = true;
-    link.removeAttribute('href');
-  }
+  link.hidden = !next.latest;
 }
 
 async function fetchRelease() {
@@ -176,25 +163,70 @@ async function fetchRelease() {
 
 function describeRelease(version, release) {
   if (!release) {
-    return { status: 'No release published yet', url: '' };
+    return { status: 'No release published yet' };
   }
-  const latest = normalizeVersion(release.tag_name);
-  if (!latest) {
-    return { status: "Couldn't check for updates", url: '' };
+  const tag = String(release.tag_name || '');
+  const latest = normalizeVersion(tag);
+  if (!latest || !SAFE_TAG.test(tag)) {
+    return { status: "Couldn't check for updates" };
   }
   const current = normalizeVersion(version);
   const order = current ? compareVersions(latest, current) : 1;
   if (order > 0) {
-    return { status: `Update available: v${latest}`, url: INSTALL_URL, latest };
+    return {
+      status: `Update available: v${latest}`,
+      latest,
+      tag,
+      notes: typeof release.body === 'string' ? release.body : '',
+    };
   }
   if (order < 0) {
-    return { status: `Ahead of the latest release (v${latest})`, url: '' };
+    return { status: `Ahead of the latest release (v${latest})` };
   }
-  return { status: 'Up to date', url: '' };
+  return { status: 'Up to date' };
 }
 
-function openDownload() {
-  window.open(INSTALL_URL, '_blank', 'noopener');
+function openUpdateFor(info) {
+  if (!info?.latest) return;
+  const tag = encodeURIComponent(info.tag);
+  showUpdateDialog({
+    version: info.latest,
+    notes: info.notes,
+    downloadUrl: `${REPO_URL}/releases/download/${tag}/install.bat`,
+    releaseUrl: `${REPO_URL}/releases/tag/${tag}`,
+    onSkip: () => skipUpdate(info),
+  });
+}
+
+const PREVIEW_NOTES = [
+  "What's new",
+  '',
+  '- Update dialog with release notes',
+  '- Skip an update to hide its chat notice',
+  '- Arena scoreboard support',
+  '- Fixed items overlapping the champion icon on narrow windows',
+  '- Fixed sticky chat collapsing after the options panel closed',
+  '- Smaller tweaks to the options menu',
+  '- Improved spacing in the post-game header',
+  '',
+  'Full Changelog: ' + REPO_URL + '/compare/v0.8...v1.0',
+].join('\n');
+
+export function previewUpdateDialog() {
+  showUpdateDialog({
+    version: '9.9',
+    notes: PREVIEW_NOTES,
+    downloadUrl: '',
+    releaseUrl: `${REPO_URL}/releases`,
+  });
+}
+
+window.__blcPreviewUpdateDialog = previewUpdateDialog;
+
+function skipUpdate(info) {
+  settings.skippedUpdate = info.latest;
+  saveSettings();
+  paintNotice();
 }
 
 let noticeDoc = null;
@@ -207,7 +239,7 @@ export function mountUpdateNotice(doc) {
 function paintNotice() {
   const doc = noticeDoc;
   if (!doc?.querySelector) return;
-  if (cached?.url) placeNotice(doc, cached);
+  if (cached?.latest && settings.skippedUpdate !== cached.latest) placeNotice(doc, cached);
   else if (cached) removeNotice(doc);
 }
 
@@ -261,7 +293,7 @@ function buildNotice(doc, info) {
   box.addEventListener('click', (event) => {
     event.preventDefault();
     event.stopPropagation();
-    openDownload();
+    openUpdateFor(cached);
   });
   fillNotice(box, info);
   return box;
@@ -270,8 +302,8 @@ function buildNotice(doc, info) {
 function fillNotice(box, info) {
   const latest = String(info.latest || '').replace(/^v/i, '');
   const label = latest
-    ? `v${latest} is available. Click to download.`
-    : 'An update is available. Click to download.';
+    ? `v${latest} is available. Click for details.`
+    : 'An update is available. Click for details.';
   const body = box.querySelector('.blc-update-body');
   if (!body || body.textContent === label) return;
   body.textContent = label;

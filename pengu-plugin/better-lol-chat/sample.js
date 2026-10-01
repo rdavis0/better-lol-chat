@@ -2,7 +2,10 @@
  * Dev sample for the post-game messages iframe.
  * Console: window.__blcInjectSampleMessages()
  * Chat: /sample or /demo, then Enter. The line is not sent.
+ * Chat: /dialog shows the update dialog with sample release notes.
  */
+
+import { previewUpdateDialog } from './update.js';
 
 const SAMPLE = 'blc-sample';
 const CELEBRATION =
@@ -290,7 +293,11 @@ function scrollParent(el) {
   return el.ownerDocument.scrollingElement || el.ownerDocument.body;
 }
 
-const CHAT_COMMANDS = new Set(['/sample', '/demo']);
+const CHAT_COMMANDS = new Map([
+  ['/sample', injectSampleMessages],
+  ['/demo', injectSampleMessages],
+  ['/dialog', previewUpdateDialog],
+]);
 let swallowSampleEnter = false;
 
 window.__blcInjectSampleMessages = injectSampleMessages;
@@ -312,7 +319,8 @@ function runSampleCommand(event, room) {
   if (event.shiftKey || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
   const field = event.target?.closest?.('textarea.chat-input, textarea');
   if (!room || !field || !room.contains(field)) return;
-  if (!CHAT_COMMANDS.has(field.value.trim().toLowerCase())) return;
+  const command = CHAT_COMMANDS.get(field.value.trim().toLowerCase());
+  if (!command) return;
 
   event.preventDefault();
   event.stopPropagation();
@@ -324,7 +332,7 @@ function runSampleCommand(event, room) {
   if (sizer) sizer.textContent = '';
   field.dispatchEvent(new Event('input', { bubbles: true }));
 
-  injectSampleMessages();
+  command();
 }
 
 function onSampleCommandKeyUp(event) {

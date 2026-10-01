@@ -13,6 +13,7 @@ import { refreshIdentities, clearRoster, players, seedRoster } from './roster.js
 import { rewriteMessages, matchAlias, stripBidi, isJoinNotice } from './messages.js';
 import { installSampleCommands } from './sample.js';
 import { beginPostGameUpdateCheck, mountUpdateNotice } from './update.js';
+import { closeUpdateDialog, updateDialogIsOpen } from './update-dialog.js';
 
 const LOG = '[better-lol-chat]';
 const VERSION = '0.8';
@@ -164,6 +165,7 @@ function onPhase(phase) {
     focusWatchBox = null;
     clearScoreboardIcons();
     closeOptions();
+    closeUpdateDialog();
     return;
   }
   beginPostGameUpdateCheck(VERSION);
@@ -907,7 +909,7 @@ function onInputOpen(event) {
 }
 
 function onHostPointerDown(event) {
-  if (event.target?.closest?.('#blc-options')) return;
+  if (event.target?.closest?.('#blc-options, #blc-update-dialog')) return;
   const menuWasOpen = optionsAreOpen();
   closeOptions();
   if (settings.stickyChat || !inPostGame || windowCollapsed) return;
@@ -983,6 +985,12 @@ function chatWindowIsFocused(room = findPostGameRoom()) {
 function onEscape(event) {
   if (event.key !== 'Escape') return;
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (updateDialogIsOpen()) {
+    event.preventDefault();
+    event.stopPropagation();
+    closeUpdateDialog();
+    return;
+  }
   if (optionsAreOpen()) {
     closeOptions();
     return;

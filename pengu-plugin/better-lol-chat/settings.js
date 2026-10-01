@@ -47,11 +47,13 @@ function loadSettings() {
     strongDim: true,
     autoOpen: true,
     stickyChat: true,
+    skippedUpdate: '',
     colors: { ...COLOR_DEFAULTS },
   };
   try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
     if (!saved || typeof saved !== 'object') return next;
+    if (typeof saved.skippedUpdate === 'string') next.skippedUpdate = saved.skippedUpdate;
     for (const key of TOGGLE_KEYS) {
       if (typeof saved[key] === 'boolean') next[key] = saved[key];
     }

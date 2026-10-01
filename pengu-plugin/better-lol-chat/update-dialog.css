@@ -1,0 +1,76 @@
+.blc-dialog {
+  position: fixed;
+  inset: 0;
+  /* Above #blc-options (100000) and .blc-bug-tip (100001) so it works when opened from the panel. */
+  z-index: 100002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 55%);
+}
+
+.blc-dialog [hidden],
+.blc-dialog[hidden] {
+  display: none !important;
+}
+
+.blc-dialog .dialog-frame {
+  width: 440px;
+  max-width: calc(100vw - 24px);
+}
+
+.blc-dialog-sub {
+  margin: 0 0 8px;
+}
+
+.blc-dialog-notes {
+  display: block;
+  height: 180px;
+  box-sizing: border-box;
+  border: 1px solid #3a2a08;
+  background: rgb(1 10 19 / 60%);
+}
+
+.blc-dialog-notes-text {
+  padding: 8px 12px 8px 10px;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #a09b8c;
+}
+
+.blc-dialog-link {
+  appearance: none;
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #a09b8c;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.blc-dialog-link:hover,
+.blc-dialog-link:focus-visible {
+  color: #f0e6d2;
+}
+
+.blc-dialog-link:active {
+  color: #5b5a56;
+}
+
+.blc-dialog-skip {
+  display: block;
+  margin: 10px auto 0;
+  font-size: 11px;
+}
+
+.blc-dialog-fallback {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #a09b8c;
+}
