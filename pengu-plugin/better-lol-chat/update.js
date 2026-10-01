@@ -1,4 +1,5 @@
 const RELEASES_URL = 'https://api.github.com/repos/rdavis0/better-lol-chat/releases/latest';
+const INSTALL_URL = 'https://github.com/rdavis0/better-lol-chat/releases/latest/download/install.bat';
 const STYLE_ID = 'blc-update-style';
 
 const STYLE = `
@@ -103,7 +104,7 @@ function createUpdateRow(doc, version) {
   link.hidden = true;
   link.target = '_blank';
   link.rel = 'noreferrer';
-  link.textContent = 'View release';
+  link.textContent = 'Download';
 
   row.append(ver, check);
   root.append(row, status, link);
@@ -151,8 +152,7 @@ function createUpdateRow(doc, version) {
     event.preventDefault();
     event.stopPropagation();
     if (!link.href) return;
-    const opened = window.open(link.href, '_blank', 'noopener');
-    if (!opened) status.textContent = link.href;
+    if (!openDownload()) status.textContent = INSTALL_URL;
   });
 
   if (cached) {
@@ -215,14 +215,13 @@ function describeRelease(version, release) {
     return { status: 'No release published yet', url: '' };
   }
   const latest = normalizeVersion(release.tag_name);
-  const url = safeReleaseUrl(release.html_url);
   if (!latest) {
     return { status: "Couldn't check for updates", url: '' };
   }
   const current = normalizeVersion(version);
   const order = current ? compareVersions(latest, current) : 1;
   if (order > 0) {
-    return { status: `Update available: v${latest}`, url };
+    return { status: `Update available: v${latest}`, url: INSTALL_URL, latest };
   }
   if (order < 0) {
     return { status: `Ahead of the latest release (v${latest})`, url: '' };
@@ -230,16 +229,126 @@ function describeRelease(version, release) {
   return { status: 'Up to date', url: '' };
 }
 
-function safeReleaseUrl(value) {
-  try {
-    const parsed = new URL(String(value || ''));
-    if (parsed.protocol !== 'https:') return '';
-    if (parsed.hostname !== 'github.com') return '';
-    if (!parsed.pathname.startsWith('/rdavis0/better-lol-chat/')) return '';
-    return parsed.href;
-  } catch {
-    return '';
+function openDownload() {
+  const opened = window.open(INSTALL_URL, '_blank', 'noopener');
+  return Boolean(opened);
+}
+
+let noticeDoc = null;
+let noticeStarted = false;
+let boundList = null;
+let insertAt = null;
+
+export function mountUpdateNotice(doc, version) {
+  noticeDoc = doc;
+  if (cached) {
+    paintNotice();
+    return;
   }
+  if (noticeStarted) return;
+  noticeStarted = true;
+  checkForUpdate(version)
+    .then(() => paintNotice())
+    .catch(() => {
+      noticeStarted = false;
+    });
+}
+
+function paintNotice() {
+  const doc = noticeDoc;
+  if (!doc?.querySelector) return;
+  if (cached?.url) placeNotice(doc, cached);
+  else if (cached) removeNotice(doc);
+}
+
+function removeNotice(doc) {
+  doc.querySelectorAll('.blc-update-note').forEach((el) => el.remove());
+}
+
+function placeNotice(doc, info) {
+  const list = doc.querySelector('.messages');
+  if (!list) return;
+  if (list !== boundList) {
+    boundList = list;
+    insertAt = null;
+  }
+  let note = null;
+  for (const child of list.children) {
+    if (child.classList?.contains('blc-update-note')) {
+      note = child;
+      break;
+    }
+  }
+  if (!note) note = buildNotice(doc, info);
+  else fillNotice(note, info);
+  if (note.parentElement === list) return;
+  const index = insertAt == null ? list.children.length : Math.min(Math.max(insertAt, 0), list.children.length);
+  const pin = insertAt == null && nearBottom(list);
+  list.insertBefore(note, list.children[index] || null);
+  if (insertAt == null) insertAt = index;
+  if (pin) pinBottom(list);
+}
+
+function buildNotice(doc, info) {
+  const box = doc.createElement('div');
+  box.className = 'message-box blc-update-note';
+  box.setAttribute('role', 'link');
+
+  const chat = doc.createElement('div');
+  chat.className = 'chat-message';
+
+  const name = doc.createElement('div');
+  name.className = 'message-name';
+  name.textContent = 'better-lol-chat';
+
+  const colon = doc.createElement('span');
+  colon.className = 'message';
+  colon.textContent = ':';
+
+  const body = doc.createElement('span');
+  body.className = 'message blc-update-body';
+
+  chat.append(name, doc.createTextNode(' '), colon, doc.createTextNode(' '), body);
+  box.appendChild(chat);
+  box.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!openDownload()) body.textContent = INSTALL_URL;
+  });
+  fillNotice(box, info);
+  return box;
+}
+
+function fillNotice(box, info) {
+  const latest = String(info.latest || '').replace(/^v/i, '');
+  const label = latest
+    ? `v${latest} is available. Click to download.`
+    : 'An update is available. Click to download.';
+  const body = box.querySelector('.blc-update-body');
+  if (!body || body.textContent === INSTALL_URL || body.textContent === label) return;
+  body.textContent = label;
+}
+
+function nearBottom(list) {
+  const scroller = messageScroller(list);
+  if (!scroller) return false;
+  return scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 48;
+}
+
+function pinBottom(list) {
+  const scroller = messageScroller(list);
+  if (scroller) scroller.scrollTop = scroller.scrollHeight;
+}
+
+function messageScroller(list) {
+  const doc = list.ownerDocument;
+  let node = list;
+  while (node && node !== doc.documentElement) {
+    const style = doc.defaultView?.getComputedStyle(node);
+    if (style && /(auto|scroll)/.test(style.overflowY)) return node;
+    node = node.parentElement;
+  }
+  return doc.scrollingElement || null;
 }
 
 function normalizeVersion(value) {

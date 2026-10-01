@@ -87,6 +87,25 @@
   color: var(--blc-celebration) !important;
 }
 
+.message-box.blc-update-note {
+  margin-top: 2px;
+  margin-bottom: 2px;
+  padding: 1px 4px;
+  background-color: rgb(212 175 55 / 24%);
+  box-shadow: inset 3px 0 0 #e1c16a;
+  cursor: pointer;
+}
+
+.message-box.blc-update-note .message-name {
+  color: #ffd700 !important;
+  font-weight: 700;
+}
+
+.message-box.blc-update-note .message,
+.blc-tint-bodies .message-box.blc-update-note .message {
+  color: #f7f0dc !important;
+}
+
 .blc-credit {
   position: fixed !important;
   top: 0 !important;

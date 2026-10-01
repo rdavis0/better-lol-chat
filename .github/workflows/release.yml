@@ -31,8 +31,13 @@ jobs:
           cd pengu-plugin
           zip -r "$RUNNER_TEMP/better-lol-chat.zip" better-lol-chat
 
-      - name: Attach the zip
+      - name: Write install.bat
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: python3 scripts/write-install-bat.py "$RELEASE_TAG" "$RUNNER_TEMP/install.bat"
+
+      - name: Attach the release files
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/better-lol-chat.zip" --clobber
+        run: gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/better-lol-chat.zip" "$RUNNER_TEMP/install.bat" --clobber

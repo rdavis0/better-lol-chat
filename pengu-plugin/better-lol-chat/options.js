@@ -27,6 +27,11 @@ const PAINT_PROPS = [
 ];
 
 const chromeToken = String(Math.random());
+const ISSUES_URL = 'https://github.com/rdavis0/better-lol-chat/issues';
+const BUG_TIP_TEXT = 'Report a Bug';
+const BUG_TIP_DELAY = 450;
+
+let bugTipTimer = 0;
 
 let deps = {
   version: '',
@@ -124,6 +129,7 @@ export function closeOptions() {
   const panel = document.getElementById('blc-options');
   if (!panel || panel.hidden) return;
   panel.hidden = true;
+  hideBugTip();
   frameDocument()?.getElementById('blc-options-cog')?.setAttribute('aria-expanded', 'false');
 }
 
@@ -137,6 +143,8 @@ function toggleOptions() {
   if (willOpen) {
     placeOptionsPanel();
     deps.onOptionsOpen();
+  } else {
+    hideBugTip();
   }
 }
 
@@ -155,6 +163,9 @@ export function placeOptionsPanel() {
   panel.style.bottom = `${Math.round(window.innerHeight - footerTop)}px`;
   panel.style.height = '';
   panel.style.maxHeight = '';
+  const tip = document.getElementById('blc-bug-tip');
+  const button = panel.querySelector('.blc-bug-report');
+  if (tip && !tip.hidden && button) positionBugTip(button, tip);
 }
 
 function hookOptionsDismiss(doc) {
@@ -290,9 +301,121 @@ function buildCreditChrome(doc, el) {
   ensureOptionsPanel();
 }
 
+function paintBugIcon(panel) {
+  const button = panel?.querySelector?.('.blc-bug-report');
+  if (!button) return;
+  const src = document.querySelector('.bug-report-button, .bug-report-button-always-top');
+  const image = src ? getComputedStyle(src).backgroundImage : '';
+  if (image && image !== 'none') button.style.backgroundImage = image;
+}
+
+function hideBugTip() {
+  if (bugTipTimer) {
+    clearTimeout(bugTipTimer);
+    bugTipTimer = 0;
+  }
+  const tip = document.getElementById('blc-bug-tip');
+  if (tip) tip.hidden = true;
+  document.querySelector('#blc-options .blc-bug-report')?.removeAttribute('aria-describedby');
+}
+
+function ensureBugTip() {
+  let tip = document.getElementById('blc-bug-tip');
+  if (tip) return tip;
+  tip = document.createElement('lol-uikit-tooltip');
+  tip.id = 'blc-bug-tip';
+  tip.className = 'blc-bug-tip';
+  tip.setAttribute('type', 'system');
+  tip.setAttribute('role', 'tooltip');
+  const block = document.createElement('lol-uikit-content-block');
+  block.setAttribute('type', 'tooltip-system');
+  block.style.whiteSpace = 'nowrap';
+  const text = document.createElement('p');
+  text.textContent = BUG_TIP_TEXT;
+  block.appendChild(text);
+  tip.appendChild(block);
+  tip.hidden = true;
+  (document.body || document.documentElement).appendChild(tip);
+  return tip;
+}
+
+function positionBugTip(button, tip) {
+  const rect = button.getBoundingClientRect();
+  if (rect.width < 1 || rect.height < 1) return false;
+  const margin = 4;
+  let pos = 'top';
+  tip.setAttribute('tooltip-position', pos);
+  tip.setAttribute('data-tooltip-position', pos);
+  let tipW = tip.offsetWidth;
+  let tipH = tip.offsetHeight;
+  if (tipW < 1 || tipH < 1) return false;
+  if (rect.top - tipH < margin) pos = 'bottom';
+  if (pos === 'bottom') {
+    tip.setAttribute('tooltip-position', pos);
+    tip.setAttribute('data-tooltip-position', pos);
+    tipW = tip.offsetWidth;
+    tipH = tip.offsetHeight;
+  }
+  let left = rect.left + rect.width / 2 - tipW / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - tipW - margin));
+  const top = pos === 'top' ? rect.top - tipH : rect.bottom;
+  tip.style.left = `${Math.round(left)}px`;
+  tip.style.top = `${Math.round(top)}px`;
+  const caret = tip.shadowRoot?.querySelector('.lol-uikit-tooltip-caret');
+  if (caret) {
+    const delta = Math.round(rect.left + rect.width / 2 - (left + tipW / 2));
+    caret.style.left = delta ? `calc(50% + ${delta}px)` : '';
+  }
+  return true;
+}
+
+function showBugTip(button) {
+  const tip = ensureBugTip();
+  tip.hidden = false;
+  button.setAttribute('aria-describedby', tip.id);
+  if (positionBugTip(button, tip)) return;
+  requestAnimationFrame(() => {
+    if (!tip.hidden) positionBugTip(button, tip);
+  });
+}
+
+function scheduleBugTip(button) {
+  const showing = document.getElementById('blc-bug-tip');
+  if (showing && !showing.hidden && button.getAttribute('aria-describedby') === showing.id) return;
+  if (bugTipTimer) {
+    clearTimeout(bugTipTimer);
+    bugTipTimer = 0;
+  }
+  bugTipTimer = setTimeout(() => {
+    bugTipTimer = 0;
+    const panel = document.getElementById('blc-options');
+    if (!panel || panel.hidden || !panel.contains(button)) return;
+    showBugTip(button);
+  }, BUG_TIP_DELAY);
+}
+
+function bindBugReport(panel) {
+  const button = panel.querySelector('.blc-bug-report');
+  if (!button || button.dataset.blcBound) return;
+  button.dataset.blcBound = '1';
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    hideBugTip();
+    window.open(ISSUES_URL, '_blank', 'noopener');
+  });
+  button.addEventListener('pointerenter', () => scheduleBugTip(button));
+  button.addEventListener('pointerleave', hideBugTip);
+  button.addEventListener('focus', () => scheduleBugTip(button));
+  button.addEventListener('blur', hideBugTip);
+}
+
 function ensureOptionsPanel() {
   const existing = document.getElementById('blc-options');
-  if (existing?.dataset.blcChrome === chromeToken) return;
+  if (existing?.dataset.blcChrome === chromeToken) {
+    paintBugIcon(existing);
+    return;
+  }
   existing?.remove();
 
   const template = document.createElement('template');
@@ -308,10 +431,12 @@ function ensureOptionsPanel() {
   syncMessageColorLock(panel);
 
   panel.addEventListener('pointerdown', (event) => {
-    const field = event.target?.closest?.('input[type="text"], input[type="color"], textarea');
+    const field = event.target?.closest?.('input[type="text"], input[type="color"], textarea, .blc-bug-report');
     if (field) return;
     event.preventDefault();
   });
+  bindBugReport(panel);
+  paintBugIcon(panel);
   (document.body || document.documentElement).appendChild(panel);
 
   const disclaimer = panel.querySelector('.blc-options-disclaimer');

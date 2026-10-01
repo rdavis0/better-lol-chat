@@ -1,8 +1,8 @@
-# better-lol-chat
+# Better LOL Chat - Buff your post-game flame!
 
 Unofficial Pengu Loader plugin that improves League of Legends **post-game chat**. Not endorsed by Riot Games.
 
-<img width="1289" height="889" alt="image" src="https://github.com/user-attachments/assets/3a2a10de-b995-4690-8a5e-53c0a0313ab3" />
+![image](https://github.com/user-attachments/assets/3a2a10de-b995-4690-8a5e-53c0a0313ab3)
 
 ## Features
 
@@ -20,14 +20,22 @@ Unofficial Pengu Loader plugin that improves League of Legends **post-game chat*
 
 ## Install
 
-1. Install Pengu Loader: [https://pengu.lol/](https://pengu.lol/)
-2. Open the [latest release](https://github.com/rdavis0/better-lol-chat/releases/latest).
-3. Under **Assets**, download `better-lol-chat.zip`.
-4. Extract the whole folder to `C:\Program Files\Pengu Loader\plugins\` (or your Pengu plugins folder).
-5. Your file structure should now look like `\Pengu Loader\plugins\better-lol-chat` with a bunch of `.js, css, .html` files inside.
-6. Restart League with Pengu running (Pengu should run automatically by default).
+Install [Pengu Loader](https://pengu.lol/) and turn it on once.
+
+### Via Installer
+
+Download [install.bat](https://github.com/rdavis0/better-lol-chat/releases/latest/download/install.bat) and run it. Restart League when it finishes (Ctrl + R in the client).
+
+### Or extract it yourself
+
+1. Download [better-lol-chat.zip](https://github.com/rdavis0/better-lol-chat/releases/latest/download/better-lol-chat.zip).
+2. Extract the `better-lol-chat` folder into Pengu's `plugins` folder. Default location is  `C:\Program Files\Pengu Loader\plugins\`.
+3. Restart League (Ctrl + R in the client)
 
 That's it! Enjoy flaming your teammates with a superior chat experience! If you want to verify the plugin is running, in the client, press `Ctrl + Shift + I` and open the console. It should show `[better-lol-chat]` followed by the version.
+
+## Demo
+Chat too quiet? You can inject sample messages (only you will see them) by typing `/demo` or `/sample` in the post-game chat. 
 
 ## License
 

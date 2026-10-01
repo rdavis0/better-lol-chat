@@ -18,6 +18,44 @@
   display: none !important;
 }
 
+/* report_bug.png is four stacked frames: rest, hover, active, disabled. */
+.blc-bug-report {
+  position: absolute;
+  z-index: 2;
+  top: 2px;
+  right: 2px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: url("/fe/lol-social/report_bug.png") center 0% / 100% 400% no-repeat;
+  cursor: pointer;
+  outline: none;
+  color: transparent;
+  font-size: 0;
+}
+
+.blc-bug-report:hover,
+.blc-bug-report:focus-visible {
+  background-position: center 33.333%;
+}
+
+.blc-bug-report:active {
+  background-position: center 66.666%;
+}
+
+.blc-bug-tip {
+  position: fixed;
+  z-index: 100001;
+  width: max-content;
+  margin: 0;
+  pointer-events: none;
+}
+
+.blc-bug-tip[hidden] {
+  display: none !important;
+}
+
 .blc-options-body {
   padding: 8px 8px 4px;
   scrollbar-width: thin;

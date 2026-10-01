@@ -12,6 +12,7 @@ import {
 import { refreshIdentities, clearRoster, players, seedRoster } from './roster.js';
 import { rewriteMessages, matchAlias, stripBidi, isJoinNotice } from './messages.js';
 import { installSampleCommands } from './sample.js';
+import { mountUpdateNotice } from './update.js';
 
 const LOG = '[better-lol-chat]';
 const VERSION = '0.5';
@@ -31,10 +32,6 @@ const COLLAPSED_CLASS = 'blc-collapsed';
 let socket = null;
 let inPostGame = false;
 let windowCollapsed = false;
-const COLLAPSE_TIP_KEY = 'blc-collapse-tip';
-const COLLAPSE_TIP_TEXT = 'click to collapse chat window';
-let collapseTipVisible = false;
-let collapseTipDismissed = false;
 let applying = false;
 let chatRoom = null;
 let focusClassObserver = null;
@@ -110,7 +107,6 @@ export function load() {
     findRoom: findPostGameRoom,
   });
 
-  armCollapseTipDismiss(document);
   document.addEventListener('pointerdown', onOptionsHold, true);
   document.addEventListener('pointerup', onOptionsHold, true);
   document.addEventListener('pointerdown', onHostPointerDown, true);
@@ -168,8 +164,6 @@ function onPhase(phase) {
     focusWatchBox = null;
     clearScoreboardIcons();
     closeOptions();
-    if (collapseTipVisible) dismissCollapseTip();
-    else hideCollapseTip();
     return;
   }
   windowCollapsed = false;
@@ -362,7 +356,6 @@ function ensureOpen() {
     onScoreboard = scoreboardIsShowing();
     if (onScoreboard) placeScoreboardIcons();
     else clearScoreboardIcons();
-    syncCollapseTip(null);
     return;
   }
   chatRoom = room;
@@ -408,7 +401,6 @@ function ensureOpen() {
     clearScoreboardIcons();
   }
   syncCredit(room);
-  syncCollapseTip(room);
 }
 
 function ensurePlayerMessagesVisible(room) {
@@ -981,112 +973,6 @@ function onEscape(event) {
   collapseWindow(room);
 }
 
-function collapseTipFinished() {
-  if (collapseTipDismissed) return true;
-  if (collapseTipVisible) return false;
-  try {
-    return sessionStorage.getItem(COLLAPSE_TIP_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-function rememberCollapseTip() {
-  try {
-    sessionStorage.setItem(COLLAPSE_TIP_KEY, '1');
-  } catch {
-    /* ignore quota / private mode */
-  }
-}
-
-function hideCollapseTip() {
-  const tip = document.getElementById('blc-collapse-tip');
-  if (tip) tip.hidden = true;
-  findPostGameRoom()?.querySelector(TOGGLE_SEL)?.removeAttribute('aria-describedby');
-}
-
-function dismissCollapseTip() {
-  if (!collapseTipVisible) return;
-  collapseTipVisible = false;
-  collapseTipDismissed = true;
-  rememberCollapseTip();
-  hideCollapseTip();
-}
-
-function ensureCollapseTipElement() {
-  let tip = document.getElementById('blc-collapse-tip');
-  if (tip) return tip;
-  tip = document.createElement('div');
-  tip.id = 'blc-collapse-tip';
-  tip.className = 'blc-collapse-tip';
-  tip.setAttribute('role', 'tooltip');
-  tip.textContent = COLLAPSE_TIP_TEXT;
-  tip.hidden = true;
-  document.body.appendChild(tip);
-  return tip;
-}
-
-function placeCollapseTip(toggle, tip) {
-  tip.hidden = false;
-  const rect = toggle.getBoundingClientRect();
-  if (rect.width < 1 || rect.height < 1) {
-    tip.hidden = true;
-    return false;
-  }
-  const margin = 8;
-  const tipW = tip.offsetWidth;
-  const tipH = tip.offsetHeight;
-  if (tipW < 1 || tipH < 1) {
-    tip.hidden = true;
-    return false;
-  }
-  let left = rect.left + rect.width / 2 - tipW / 2;
-  left = Math.max(margin, Math.min(left, window.innerWidth - tipW - margin));
-  let top = rect.top - tipH - 10;
-  const above = top >= margin;
-  if (!above) top = Math.min(window.innerHeight - tipH - margin, rect.bottom + 10);
-  tip.classList.toggle('blc-collapse-tip-below', !above);
-  tip.style.left = `${Math.round(left)}px`;
-  tip.style.top = `${Math.round(top)}px`;
-  const arrow = Math.max(12, Math.min(tipW - 12, rect.left + rect.width / 2 - left));
-  tip.style.setProperty('--blc-tip-arrow', `${Math.round(arrow)}px`);
-  return true;
-}
-
-function syncCollapseTip(room) {
-  if (collapseTipFinished()) {
-    hideCollapseTip();
-    return;
-  }
-  const toggle = room?.querySelector?.(TOGGLE_SEL);
-  const ready = !!(
-    room &&
-    settings.stickyChat &&
-    onScoreboard &&
-    !windowCollapsed &&
-    !room.classList.contains(COLLAPSED_CLASS) &&
-    isChatOpen(room) &&
-    toggle
-  );
-  if (!ready) {
-    hideCollapseTip();
-    return;
-  }
-  const tip = ensureCollapseTipElement();
-  if (!placeCollapseTip(toggle, tip)) return;
-  toggle.setAttribute('aria-describedby', tip.id);
-  if (!collapseTipVisible) rememberCollapseTip();
-  collapseTipVisible = true;
-}
-
-function armCollapseTipDismiss(doc) {
-  const root = doc?.documentElement;
-  if (!root || root.dataset.blcTipHooked) return;
-  root.dataset.blcTipHooked = '1';
-  doc.addEventListener('pointerdown', dismissCollapseTip, true);
-  doc.addEventListener('keydown', dismissCollapseTip, true);
-}
-
 function armFrameEscape(doc) {
   const root = doc?.documentElement;
   if (!root || root.dataset.blcEscHooked) return;
@@ -1118,6 +1004,7 @@ function enhance() {
       injectFrameStyles(doc);
       insertCredit(doc);
       rewriteMessages(doc);
+      mountUpdateNotice(doc, VERSION);
     }
   } catch (err) {
     console.warn(LOG, err);
@@ -1160,7 +1047,6 @@ function hookMessageFrame(room) {
   const attach = () => {
     const doc = getFrameDocument(room);
     if (!doc) return;
-    armCollapseTipDismiss(doc);
     armFrameEscape(doc);
     if (frameObservers.has(doc)) return;
     const mo = new MutationObserver(() => {

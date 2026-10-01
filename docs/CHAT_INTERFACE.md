@@ -163,6 +163,10 @@ LCU `groupchat` messages in the 2026-09-23 capture use `fromSummonerId: 0`. `fro
 
 Plugin version is the single `VERSION` constant in `index.js` (`X.X`). It is logged once on `load()` as `[better-lol-chat] vX.X` and shown on the update row in the options panel.
 
+The bug icon at the top right of `#blc-options` opens the GitHub issues page. It uses Riot’s `.bug-report-button` sprite (`/fe/lol-social/report_bug.png`). Hover shows “Report a Bug” in the client system tooltip: a `lol-uikit-tooltip` with `type="system"` and a `lol-uikit-content-block` of `type="tooltip-system"`.
+
+When the latest GitHub release is newer, one local row is appended to `.messages`. It uses the normal chat-message shape (`better-lol-chat` as the name, then the version), with class `blc-update-note` and a soft gold background. Later messages push it up the list. Clicking the row opens the `install.bat` download for that release. The row is not sent through League chat. `rewriteMessages` skips it. The options-panel download link opens that same `install.bat`.
+
 ## Identity
 
 Built when post-game starts, from:
