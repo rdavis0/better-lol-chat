@@ -301,14 +301,6 @@ function buildCreditChrome(doc, el) {
   ensureOptionsPanel();
 }
 
-function paintBugIcon(panel) {
-  const button = panel?.querySelector?.('.blc-bug-report');
-  if (!button) return;
-  const src = document.querySelector('.bug-report-button, .bug-report-button-always-top');
-  const image = src ? getComputedStyle(src).backgroundImage : '';
-  if (image && image !== 'none') button.style.backgroundImage = image;
-}
-
 function hideBugTip() {
   if (bugTipTimer) {
     clearTimeout(bugTipTimer);
@@ -412,10 +404,7 @@ function bindBugReport(panel) {
 
 function ensureOptionsPanel() {
   const existing = document.getElementById('blc-options');
-  if (existing?.dataset.blcChrome === chromeToken) {
-    paintBugIcon(existing);
-    return;
-  }
+  if (existing?.dataset.blcChrome === chromeToken) return;
   existing?.remove();
 
   const template = document.createElement('template');
@@ -436,7 +425,6 @@ function ensureOptionsPanel() {
     event.preventDefault();
   });
   bindBugReport(panel);
-  paintBugIcon(panel);
   (document.body || document.documentElement).appendChild(panel);
 
   const disclaimer = panel.querySelector('.blc-options-disclaimer');

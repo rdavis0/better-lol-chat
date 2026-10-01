@@ -121,12 +121,6 @@ if ((Split-Path -Leaf $dest) -ne 'better-lol-chat') {
   Wait-Close 1
 }
 
-$league = Get-Process -Name 'LeagueClient', 'LeagueClientUx', 'LeagueClientUxRender' -ErrorAction SilentlyContinue
-if ($league) {
-  Write-Host 'Close League, then run install.bat again.'
-  Wait-Close 1
-}
-
 if (-not (Test-DirWritable $plugins)) {
   if (Test-Admin) {
     Write-Host 'Cannot write to:'

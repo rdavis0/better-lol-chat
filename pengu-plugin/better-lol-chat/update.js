@@ -236,8 +236,6 @@ function openDownload() {
 
 let noticeDoc = null;
 let noticeStarted = false;
-let boundList = null;
-let insertAt = null;
 
 export function mountUpdateNotice(doc, version) {
   noticeDoc = doc;
@@ -268,10 +266,6 @@ function removeNotice(doc) {
 function placeNotice(doc, info) {
   const list = doc.querySelector('.messages');
   if (!list) return;
-  if (list !== boundList) {
-    boundList = list;
-    insertAt = null;
-  }
   let note = null;
   for (const child of list.children) {
     if (child.classList?.contains('blc-update-note')) {
@@ -281,12 +275,14 @@ function placeNotice(doc, info) {
   }
   if (!note) note = buildNotice(doc, info);
   else fillNotice(note, info);
-  if (note.parentElement === list) return;
-  const index = insertAt == null ? list.children.length : Math.min(Math.max(insertAt, 0), list.children.length);
-  const pin = insertAt == null && nearBottom(list);
-  list.insertBefore(note, list.children[index] || null);
-  if (insertAt == null) insertAt = index;
-  if (pin) pinBottom(list);
+  if (list.firstElementChild === note) return;
+  const scroller = messageScroller(list);
+  const prevTop = scroller ? scroller.scrollTop : 0;
+  const prevHeight = scroller ? scroller.scrollHeight : 0;
+  list.insertBefore(note, list.firstElementChild);
+  if (!scroller || prevTop <= 0) return;
+  const grown = scroller.scrollHeight - prevHeight;
+  if (grown > 0) scroller.scrollTop = prevTop + grown;
 }
 
 function buildNotice(doc, info) {
@@ -327,17 +323,6 @@ function fillNotice(box, info) {
   const body = box.querySelector('.blc-update-body');
   if (!body || body.textContent === INSTALL_URL || body.textContent === label) return;
   body.textContent = label;
-}
-
-function nearBottom(list) {
-  const scroller = messageScroller(list);
-  if (!scroller) return false;
-  return scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 48;
-}
-
-function pinBottom(list) {
-  const scroller = messageScroller(list);
-  if (scroller) scroller.scrollTop = scroller.scrollHeight;
 }
 
 function messageScroller(list) {

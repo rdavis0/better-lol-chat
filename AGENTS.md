@@ -23,6 +23,8 @@ Settings live in the League client's `localStorage` under `blc-settings`. On loa
 
 Do not call `textarea.focus()`. That scrolls the whole client.
 
+Do not set `z-index` unless a live check shows the element is covered, or is covering something it should not. Leave stacking alone until that is proven.
+
 The plugin runs inside the League client:
 
 - It cannot raise its own permissions. `context.fs` cannot write outside the plugin folder. Program Files is read-only from that process.

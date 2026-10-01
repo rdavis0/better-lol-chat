@@ -18,17 +18,19 @@
   display: none !important;
 }
 
-/* report_bug.png is four stacked frames: rest, hover, active, disabled. */
+/* Beetle from Riot's report-bug button, without the button frame. */
 .blc-bug-report {
   position: absolute;
   z-index: 2;
-  top: 2px;
-  right: 2px;
-  width: 32px;
-  height: 32px;
+  top: 7px;
+  right: 8px;
+  width: 16px;
+  height: 16px;
   padding: 0;
   border: 0;
-  background: url("/fe/lol-social/report_bug.png") center 0% / 100% 400% no-repeat;
+  background-color: #a09b8c;
+  -webkit-mask: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADgAAAA4CAYAAACohjseAAABc0lEQVR42u1aSRIDIQhUiv9/2VwyVSkzOiKyJhyTUbplUcRSiNJaa8VIdnQjR1GttXoldglYKdbSgacAnLbmqcUDb4BOz4USq75rTQmXR+m4eSIrHcfoPUm4iUGvkp4gcmPIUnr3v8MKT4PaW7yTG/0GqwnBE0kKToiUEXcw/LNoKoKeM+aq9Bzg6YPI5IYuGpHkCPPxgzB3cU7rBEmwlpZbzqKeSa5gAw23syJH2gc9kaRgAc0Eok3uf1RLV/B6rPt29slPN8YoxHavL/PHYDbr9ZbMb8EMNeAs2fzGNnFZMUs8fm0T/R9Rid6FG84+jEJ0lkdwZaBXoisJEikTeSEqUi5FubrfIhil+bJF0HOiWcEGp8lxFkRCH0S0HAUrSJDTtvxsPEhZjjKPpE7UqqytwgA5G+0qQC4RzkEDOKcIjVqSq4/UH/R+8cvqDw77b4KkKTq3+oPF6F3ayUUDy76BhkdUL+9ZpFzd9FF55hs9NXkBeOQUcsxBZ3IAAAAASUVORK5CYII=") center / contain no-repeat;
+  mask: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADgAAAA4CAYAAACohjseAAABc0lEQVR42u1aSRIDIQhUiv9/2VwyVSkzOiKyJhyTUbplUcRSiNJaa8VIdnQjR1GttXoldglYKdbSgacAnLbmqcUDb4BOz4USq75rTQmXR+m4eSIrHcfoPUm4iUGvkp4gcmPIUnr3v8MKT4PaW7yTG/0GqwnBE0kKToiUEXcw/LNoKoKeM+aq9Bzg6YPI5IYuGpHkCPPxgzB3cU7rBEmwlpZbzqKeSa5gAw23syJH2gc9kaRgAc0Eok3uf1RLV/B6rPt29slPN8YoxHavL/PHYDbr9ZbMb8EMNeAs2fzGNnFZMUs8fm0T/R9Rid6FG84+jEJ0lkdwZaBXoisJEikTeSEqUi5FubrfIhil+bJF0HOiWcEGp8lxFkRCH0S0HAUrSJDTtvxsPEhZjjKPpE7UqqytwgA5G+0qQC4RzkEDOKcIjVqSq4/UH/R+8cvqDw77b4KkKTq3+oPF6F3ayUUDy76BhkdUL+9ZpFzd9FF55hs9NXkBeOQUcsxBZ3IAAAAASUVORK5CYII=") center / contain no-repeat;
   cursor: pointer;
   outline: none;
   color: transparent;
@@ -37,11 +39,11 @@
 
 .blc-bug-report:hover,
 .blc-bug-report:focus-visible {
-  background-position: center 33.333%;
+  background-color: #f0e6d2;
 }
 
 .blc-bug-report:active {
-  background-position: center 66.666%;
+  background-color: #5b5a56;
 }
 
 .blc-bug-tip {

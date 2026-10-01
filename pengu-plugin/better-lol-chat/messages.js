@@ -107,19 +107,27 @@ function paintParts(el, parts) {
   el.replaceChildren(...renderParts(el.ownerDocument, parts));
 }
 
+function textPart(text, className) {
+  return className ? { className, text } : { text };
+}
+
+function nameParts(text, player, nameClass) {
+  if (!showsChampion() || !player?.championName) return [textPart(text)];
+  if (!showsSummoner()) return [textPart(player.championName, nameClass)];
+  return [
+    textPart(summonerLabel(text), nameClass),
+    textPart(`(${player.championName})`, 'blc-secondary-name'),
+  ];
+}
+
+function withIcon(icon, parts, wrapClass) {
+  if (!icon) return parts;
+  if (!wrapClass) return [icon, ...parts];
+  return [{ className: wrapClass, parts: [icon, ...parts] }];
+}
+
 function paintChatName(el, original, player) {
-  const parts = [];
-  const icon = iconPart(player);
-  if (icon) parts.push(icon);
-  if (!showsChampion() || !player?.championName) {
-    parts.push({ text: original });
-  } else if (!showsSummoner()) {
-    parts.push({ text: player.championName });
-  } else {
-    parts.push({ text: summonerLabel(original) });
-    parts.push({ className: 'blc-secondary-name', text: `(${player.championName})` });
-  }
-  paintParts(el, parts);
+  paintParts(el, withIcon(iconPart(player), nameParts(original, player)));
 }
 
 function rewriteNames(root) {
@@ -218,27 +226,13 @@ function resolvePlayer(text) {
 }
 
 function paintLeaveName(span, original, player, verb, summonerName) {
-  const icon = iconPart(player);
-  const nameParts = [];
-  let verbText = null;
-  if (!showsChampion() || !player?.championName) {
-    nameParts.push({ text: original });
-  } else if (!showsSummoner()) {
-    nameParts.push({ className: 'blc-system-name', text: player.championName });
-    verbText = ` ${verb}`;
-  } else {
-    nameParts.push({ className: 'blc-system-name', text: summonerLabel(summonerName) });
-    nameParts.push({ className: 'blc-secondary-name', text: `(${player.championName})` });
-    verbText = ` ${verb}`;
-  }
-  const parts = [];
-  if (icon && verbText) {
-    parts.push({ className: 'blc-leave-label', parts: [icon, ...nameParts] });
-    parts.push({ text: verbText });
-  } else {
-    if (icon) parts.push(icon);
-    parts.push(...nameParts);
-  }
+  const split = Boolean(showsChampion() && player?.championName);
+  const parts = withIcon(
+    iconPart(player),
+    nameParts(split ? summonerName : original, player, 'blc-system-name'),
+    split ? 'blc-leave-label' : '',
+  );
+  if (split) parts.push({ text: ` ${verb}` });
   paintParts(span, parts);
 }
 
