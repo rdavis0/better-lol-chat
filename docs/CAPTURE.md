@@ -3,6 +3,8 @@
 - [x] Connected message list — [`docs/fixtures/messages.html`](fixtures/messages.html) (2026-09-23). Captured with the plugin running, so names are already champions and leave rows already use `.blc-system-name`.
 - [x] Matching LCU messages — [`docs/fixtures/postgame-messages.json`](fixtures/postgame-messages.json)
 - [ ] Arena end-of-game block and scoreboard
+- [x] Client dialog style references — [`docs/fixtures/client-exit-dialog.html`](fixtures/client-exit-dialog.html), [`docs/fixtures/client-privacy-notice.html`](fixtures/client-privacy-notice.html) (patch 16.19)
+- [ ] Update dialog live check: where the client mounts `.dialog-confirm`, and the markup of the frame's close button (run `/dialog` first)
 
 Do this on a post-game screen while the chat session is still connected. An expired frame only shows `.messages.disconnected` and cannot confirm the row markup. `docs/fixtures/postgame-screen.html` is not a substitute: its iframe is empty.
 

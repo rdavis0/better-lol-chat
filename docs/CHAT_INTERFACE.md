@@ -165,7 +165,20 @@ Plugin version is the single `VERSION` constant in `index.js` (`X.X`). It is log
 
 The bug icon at the top right of the update row in `#blc-options` opens the GitHub issues page. It is the beetle from Riot’s report-bug button, without that button’s frame, at 16px. Rest, hover, and active colors match the gear and close icons (`#a09b8c`, `#f0e6d2`, `#5b5a56`). Hover shows “Report a Bug” in the client system tooltip: a `lol-uikit-tooltip` with `type="system"` and a `lol-uikit-content-block` of `type="tooltip-system"`.
 
-The plugin asks GitHub for the latest release once each time a post-game screen starts. When that release is newer, one local row is inserted as the first child of `.messages`. It uses the normal chat-message shape (`better-lol-chat` as the name, then the version), with class `blc-update-note` and a soft gold background. Later messages stay below it, and it scrolls with the list. Clicking the row opens the `install.bat` download for that release. The row is not sent through League chat. `rewriteMessages` skips it. The options-panel download link opens that same `install.bat`.
+The plugin asks GitHub for the latest release once each time a post-game screen starts (8 second timeout; on failure the options row says it couldn't check). When that release is newer, one local row is inserted as the first child of `.messages`. It uses the normal chat-message shape (`better-lol-chat` as the name, then `vX.X is available. Click for details.`), with class `blc-update-note` and a soft gold background. Later messages stay below it, and it scrolls with the list. Clicking the row opens the update dialog. The row is not sent through League chat. `rewriteMessages` skips it. The options-panel update row shows the status text, and a "What's new" button when an update is available. That button opens the same dialog.
+
+### Update dialog
+
+Plain HTML in `update-dialog.html`, filled in by `update-dialog.js`, styled by `update-dialog.css`. It is appended to the host `document.body` (not the messages iframe) as `#blc-update-dialog`, hidden until shown. Structure and classes follow the client's exit dialog (`[docs/fixtures/client-exit-dialog.html](fixtures/client-exit-dialog.html)`): `lol-uikit-dialog-frame[close-button]`, `lol-uikit-content-block[type="dialog-small"]` with an `h4` and `hr.heading-spacer`, and a `lol-uikit-flat-button-group[type="dialog-frame"]` whose `button-accept` / `button-decline` buttons are Download Now and View on GitHub. The notes box is a `lol-uikit-scrollable`, as in the privacy notice (`[docs/fixtures/client-privacy-notice.html](fixtures/client-privacy-notice.html)`).
+
+- Notes are the release `body` from GitHub, inserted with `textContent` and shown as written (`white-space: pre-wrap`). No markdown is parsed. An empty body shows a placeholder line.
+- **Download Now** opens `releases/download/{tag}/install.bat` for the release that was checked, then swaps the dialog to the install steps (buttons and Skip link are hidden). The fallback line there opens the release page.
+- **View on GitHub** opens `releases/tag/{tag}` and leaves the dialog open.
+- **Skip this update** is a text link under the notes. It closes the dialog, stores the version in `blc-settings` as `skippedUpdate`, and removes the chat note. The note is suppressed only while the latest version equals `skippedUpdate`; a newer release brings it back. The options row still reports the update and the dialog can still be opened from it.
+- The close X and Esc dismiss the dialog with no other effect. The dialog is closed when post-game ends. Pointer events inside it are exempt from the chat/options outside-click handling in `index.js`.
+- `z-index: 100002` is set on purpose: `#blc-options` is `100000` and `.blc-bug-tip` is `100001`, and the dialog can be opened from the panel.
+- The X is detected by a class name containing `close` on the click path, because the frame's close-button markup has not been captured. Re-check this live.
+- Preview: `/dialog` in the post-game chat input, or `window.__blcPreviewUpdateDialog()`. It uses sample notes. Download Now does not open anything in preview and Skip does nothing.
 
 ## Identity
 
