@@ -15,7 +15,7 @@ import { installSampleCommands } from './sample.js';
 import { mountUpdateNotice } from './update.js';
 
 const LOG = '[better-lol-chat]';
-const VERSION = '0.5';
+const VERSION = '0.6';
 const CREDIT_TEXT = `better-lol-chat by wryguy`;
 const POSTGAME_PHASES = new Set([
   'WaitingForStats',
