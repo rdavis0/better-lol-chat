@@ -1,8 +1,8 @@
 .blc-dialog {
   position: fixed;
   inset: 0;
-  /* Above #blc-options (100000) and .blc-bug-tip (100001) so it works when opened from the panel. */
-  z-index: 100002;
+  /* Above #blc-options (10) and .blc-bug-tip (11) so it works when opened from the panel. */
+  z-index: 12;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -176,7 +176,7 @@ Plain HTML in `update-dialog.html`, filled in by `update-dialog.js`, styled by `
 - **View on GitHub** opens `releases/tag/{tag}` and leaves the dialog open.
 - **Skip this update** is a text link under the notes. It closes the dialog, stores the version in `blc-settings` as `skippedUpdate`, and removes the chat note. The note is suppressed only while the latest version equals `skippedUpdate`; a newer release brings it back. The options row still reports the update and the dialog can still be opened from it.
 - The close X and Esc dismiss the dialog with no other effect. The dialog is closed when post-game ends. Pointer events inside it are exempt from the chat/options outside-click handling in `index.js`.
-- `z-index: 100002` is set on purpose: `#blc-options` is `100000` and `.blc-bug-tip` is `100001`, and the dialog can be opened from the panel.
+- `z-index: 12` is set on purpose: `#blc-options` is `10` and `.blc-bug-tip` is `11`, and the dialog can be opened from the panel.
 - The X is detected by a class name containing `close` on the click path, because the frame's close-button markup has not been captured. Re-check this live.
 - Preview: `/dialog` in the post-game chat input, or `window.__blcPreviewUpdateDialog()`. It uses sample notes. Download Now does not open anything in preview and Skip does nothing.
 
