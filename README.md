@@ -20,7 +20,7 @@ Unofficial Pengu Loader plugin that improves League of Legends **post-game chat*
 
 ## Install
 
-Install [Pengu Loader](https://pengu.lol/) and turn it on once.
+**Required dependency:** Install [Pengu Loader](https://pengu.lol/) and turn it on once.
 
 ### Via Installer
 
