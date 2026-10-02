@@ -4,19 +4,16 @@ import dialogHtml from './update-dialog.html?raw';
 const DIALOG_ID = 'blc-update-dialog';
 const EMPTY_NOTES = 'No release notes were published for this version.';
 
-// Above #blc-options (10) and .blc-bug-tip (11). Live check outside post-game: stacking was not the
-// problem (the dialog was already topmost). A dialog created hidden and un-hidden through the
-// stylesheet was not painted until its style attribute was touched, so the value is set inline on
-// a freshly inserted element each time.
-const DIALOG_Z = '12';
-
 let active = null;
 
-function buildDialog() {
+function ensureDialog() {
+  const existing = document.getElementById(DIALOG_ID);
+  if (existing) return existing;
   const template = document.createElement('template');
   template.innerHTML = dialogHtml.trim();
   const root = template.content.firstElementChild;
   root.addEventListener('click', onDialogClick);
+  (document.body || document.documentElement).appendChild(root);
   return root;
 }
 
@@ -32,11 +29,13 @@ function setView(root, view) {
 }
 
 export function updateDialogIsOpen() {
-  return !!document.getElementById(DIALOG_ID);
+  const root = document.getElementById(DIALOG_ID);
+  return !!root && !root.hidden;
 }
 
 export function closeUpdateDialog() {
-  document.getElementById(DIALOG_ID)?.remove();
+  const root = document.getElementById(DIALOG_ID);
+  if (root) root.hidden = true;
   active = null;
 }
 
@@ -45,15 +44,15 @@ export function closeUpdateDialog() {
  * An empty downloadUrl is a preview: Download Now still advances to the install step.
  */
 export function showUpdateDialog(options) {
-  closeUpdateDialog();
-  const root = buildDialog();
+  const root = ensureDialog();
   active = options;
   const version = String(options.version || '').replace(/^v/i, '');
   setText(root, 'subtitle', version ? `better-lol-chat v${version} is ready to install.` : 'An update is ready to install.');
   setText(root, 'notes', String(options.notes || '').trim() || EMPTY_NOTES);
   setView(root, 'notes');
-  root.style.zIndex = DIALOG_Z;
-  (document.body || document.documentElement).appendChild(root);
+  root.hidden = false;
+  const scroller = root.querySelector('.blc-dialog-notes');
+  if (scroller) scroller.scrollTop = 0;
 }
 
 function openExternal(url) {
