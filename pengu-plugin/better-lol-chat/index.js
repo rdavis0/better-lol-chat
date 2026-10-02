@@ -10,7 +10,7 @@ import {
   syncOptionsScrollbar,
 } from './options.js';
 import { refreshIdentities, clearRoster, players, seedRoster } from './roster.js';
-import { rewriteMessages, matchAlias, stripBidi, isJoinNotice } from './messages.js';
+import { rewriteMessages, matchAlias, stripBidi } from './messages.js';
 import { installSampleCommands } from './sample.js';
 import { beginPostGameUpdateCheck, mountUpdateNotice } from './update.js';
 import { beginPostGameNoticeCheck, mountNotice, onNoticeIdentitiesReady, clearNoticeMount } from './notice.js';
@@ -101,7 +101,7 @@ export function load() {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['class', 'room-changed-messages'],
+    attributeFilter: ['class'],
   });
 
   installSampleCommands({
@@ -1032,7 +1032,6 @@ function enhance() {
     if (!room) return;
     chatRoom = room;
     ensurePlayerMessagesVisible(room);
-    stripRoomChangedJoinNoise(room);
     hookMessageFrame(room);
     const doc = getFrameDocument(room);
     if (doc) {
@@ -1046,21 +1045,6 @@ function enhance() {
     console.warn(LOG, err);
   } finally {
     applying = false;
-  }
-}
-
-function stripRoomChangedJoinNoise(room) {
-  const raw = room.getAttribute('room-changed-messages');
-  if (!raw) return;
-  try {
-    const arr = JSON.parse(raw);
-    if (!Array.isArray(arr)) return;
-    const filtered = arr.filter((s) => !isJoinNotice(String(s)));
-    if (filtered.length !== arr.length) {
-      room.setAttribute('room-changed-messages', JSON.stringify(filtered));
-    }
-  } catch {
-    /* ignore */
   }
 }
 

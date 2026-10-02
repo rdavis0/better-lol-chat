@@ -44,7 +44,7 @@ Chat is forced open only when a `.scoreboard-team-container` is actually on scre
 
 Sticky chat is separate from that open. On, scoreboard chat stays open until the chat button or Esc. Off, loss of focus closes it the way the client does, including after an automatic open. An open options panel is not loss of focus.
 
-While open on the scoreboard, the room is stretched with `blc-stretched`. Its top lines up with the top of `.scoreboard-header-component.is-player-team`. Width and bottom stay where vanilla put them. Each visible `.scoreboard-header-component` gets a leading flex child, `.blc-header-chat-gutter`, whose right edge lines up with the chat window. `.scoreboard-header-team-name` then has a 5px left margin. While shifted, `.scoreboard-header-content` drops Riot's fixed 500px width (inline, so it wins) and shrinks to its text. The header's own spacer absorbs that width, so `.scoreboard-column-icons-container` stays put. The iframe fills the height above the input. Numbers are measured, not hardcoded, and recomputed on resize.
+While open on the scoreboard, the room is stretched with `blc-stretched`. The stretch paints the room and `.chat-box` solid `#010a13`. Vanilla leaves the focused room at `rgba(1, 10, 19, 0.95)` and fades `.chat-box` from transparent to `#010a13`; that fade would stretch with the window. The room's top lines up with the top of `.scoreboard-header-component.is-player-team`. Width and bottom stay where vanilla put them. Each visible `.scoreboard-header-component` gets a leading flex child, `.blc-header-chat-gutter`, whose right edge lines up with the chat window. `.scoreboard-header-team-name` then has a 5px left margin. While shifted, `.scoreboard-header-content` drops Riot's fixed 500px width (inline, so it wins) and shrinks to its text. The header's own spacer absorbs that width, so `.scoreboard-column-icons-container` stays put. The iframe fills the height above the input. Numbers are measured, not hardcoded, and recomputed on resize.
 
 ## Messages iframe
 
@@ -121,8 +121,8 @@ Typing `/sample` or `/demo` in the post-game `textarea.chat-input` and pressing 
 ### System line
 
 - One `<span>` inside `.system-message`. No `.message-name`.
-- LCU `type: "system"` and `body: "joined_room"` render as `{displayName} joined the lobby`. `body: "left_room"` renders as `{displayName} left the lobby`. The body field is the localization key, not the sentence.
-- Join rows are hidden by adding `blc-hide-join` on the `.message-box` when the span text matches `joined the lobby` or `joined the room`. Leave rows stay. The leave sentence must remain one span so the name can be split off: after bidi marks are stripped, it is `Name #TAG left the lobby`. The name becomes `<span class="blc-system-name">Champion</span>` and the rest of the text stays gray.
+- LCU `type: "system"` and `body: "joined_room"` render as `{displayName} joined the lobby`. `body: "left_room"` renders as `{displayName} left the lobby`. The body field is the localization key, not the sentence. The iframe span does not receive that key or the message id.
+- A player joins once, then may leave. System spans are tied to a player by the Riot ID inside the text (`Name #TAG`, with or without the space before `#`). For each player, top to bottom, the first line gets `blc-hide-join` on the `.message-box`. The second stays. Its matched name is wrapped in `.blc-system-name` (inside `.blc-leave-label` with the icon) and the rest of the sentence, on either side, stays gray. Sample rows (`blc-sample`) are counted on their own, so the demo join and leave do not take the live leave slot.
 - `type: "celebration"` uses the same `.system-message` wrapper. In this capture the span itself has class `celebration`, and its text is the LCU `body` (the honor sentence). `fromId`, `fromPuuid`, and `fromSummonerId` are empty. The row class was `other-team`.
 
 

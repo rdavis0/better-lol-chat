@@ -88,13 +88,13 @@ export async function injectSampleMessages() {
   const seeded = seedRoster(players);
 
   const inserted = [];
-  for (const team of ['mine', 'my-team', 'other-team']) {
-    for (const player of players[team]) {
-      if (!player.summoner) continue;
-      const row = makeSystem(doc, team, `${player.summoner} joined the lobby`);
-      parent.appendChild(row);
-      inserted.push(row);
-    }
+  const sample = ['mine', 'my-team', 'other-team']
+    .flatMap((team) => players[team].map((player) => ({ team, player })))
+    .find((entry) => entry.player.summoner);
+  if (sample) {
+    const row = makeSystem(doc, sample.team, `${sample.player.summoner} joined the lobby`);
+    parent.appendChild(row);
+    inserted.push(row);
   }
 
   const skipped = { mine: 0, 'my-team': 0, 'other-team': 0 };
@@ -109,10 +109,8 @@ export async function injectSampleMessages() {
     inserted.push(row);
   }
 
-  for (const team of ['my-team', 'other-team']) {
-    const player = players[team].find((entry) => entry.summoner);
-    if (!player) continue;
-    const row = makeSystem(doc, team, `${player.summoner} left the lobby`);
+  if (sample) {
+    const row = makeSystem(doc, sample.team, `${sample.player.summoner} left the lobby`);
     parent.appendChild(row);
     inserted.push(row);
   }
