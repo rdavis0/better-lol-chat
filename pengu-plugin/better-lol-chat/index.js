@@ -149,6 +149,7 @@ export function load() {
 function onPhase(phase) {
   const next = POSTGAME_PHASES.has(String(phase || ''));
   if (next === inPostGame && next) return;
+  const leavingPostGame = inPostGame && !next;
   inPostGame = next;
   if (!inPostGame) {
     windowCollapsed = false;
@@ -165,7 +166,7 @@ function onPhase(phase) {
     focusWatchBox = null;
     clearScoreboardIcons();
     closeOptions();
-    closeUpdateDialog();
+    if (leavingPostGame) closeUpdateDialog();
     return;
   }
   beginPostGameUpdateCheck(VERSION);
