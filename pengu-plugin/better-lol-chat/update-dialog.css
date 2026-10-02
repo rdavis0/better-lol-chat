@@ -1,8 +1,8 @@
 .blc-dialog {
   position: fixed;
   inset: 0;
-  /* Above #blc-options (10) and .blc-bug-tip (11) so it works when opened from the panel. */
-  z-index: 12;
+  /* Live check: at 12 the dialog was hidden behind client layers outside post-game. 999999 showed. */
+  z-index: 999999;
   display: flex;
   align-items: center;
   justify-content: center;
