@@ -133,7 +133,7 @@ function paintChatName(el, original, player) {
 function rewriteNames(root) {
   const nameNodes = root.querySelectorAll?.('.message-box .message-name') || [];
   for (const el of nameNodes) {
-    if (el.closest?.('.blc-update-note')) continue;
+    if (el.closest?.('.blc-injected')) continue;
     if (el.closest?.('.system-message')) continue;
     let original = el.dataset.blcOriginal;
     let player = null;
@@ -168,7 +168,7 @@ function fixTeamClasses(root) {
   const boxes = root.querySelectorAll?.('.message-box') || [];
   for (const box of boxes) {
     if (box.classList.contains('mine')) continue;
-    if (box.classList.contains('blc-update-note')) continue;
+    if (box.classList.contains('blc-injected')) continue;
     if (box.querySelector?.('.celebration')) continue;
 
     const player = speakerForBox(box);

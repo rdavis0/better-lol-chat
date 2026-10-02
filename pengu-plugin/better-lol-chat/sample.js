@@ -3,9 +3,11 @@
  * Console: window.__blcInjectSampleMessages()
  * Chat: /sample or /demo, then Enter. The line is not sent.
  * Chat: /dialog shows the update dialog with sample release notes.
+ * Chat: /notice shows the remote notice that would be due (ignores the game gap).
  */
 
 import { previewUpdateDialog } from './update.js';
+import { previewNotice } from './notice.js';
 
 const SAMPLE = 'blc-sample';
 const CELEBRATION =
@@ -297,6 +299,7 @@ const CHAT_COMMANDS = new Map([
   ['/sample', injectSampleMessages],
   ['/demo', injectSampleMessages],
   ['/dialog', previewUpdateDialog],
+  ['/notice', previewNotice],
 ]);
 let swallowSampleEnter = false;
 

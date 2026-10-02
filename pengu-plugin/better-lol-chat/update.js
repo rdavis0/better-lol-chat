@@ -269,7 +269,7 @@ function placeNotice(doc, info) {
 
 function buildNotice(doc, info) {
   const box = doc.createElement('div');
-  box.className = 'message-box blc-update-note';
+  box.className = 'message-box blc-injected blc-update-note';
   box.setAttribute('role', 'link');
 
   const chat = doc.createElement('div');

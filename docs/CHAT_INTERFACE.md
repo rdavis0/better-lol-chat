@@ -165,7 +165,17 @@ Plugin version is the single `VERSION` constant in `index.js` (`X.X`). It is log
 
 The bug icon at the top right of the update row in `#blc-options` opens the GitHub issues page. It is the beetle from Riot’s report-bug button, without that button’s frame, at 16px. Rest, hover, and active colors match the gear and close icons (`#a09b8c`, `#f0e6d2`, `#5b5a56`). Hover shows “Report a Bug” in the client system tooltip: a `lol-uikit-tooltip` with `type="system"` and a `lol-uikit-content-block` of `type="tooltip-system"`.
 
-The plugin asks GitHub for the latest release once each time a post-game screen starts (8 second timeout; on failure the options row says it couldn't check). When that release is newer, one local row is inserted as the first child of `.messages`. It uses the normal chat-message shape (`better-lol-chat` as the name, then `vX.X is available. Click for details.`), with class `blc-update-note` and a soft gold background. Later messages stay below it, and it scrolls with the list. Clicking the row opens the update dialog. The row is not sent through League chat. `rewriteMessages` skips it. The options-panel update row shows the status text, and a "What's new" button when an update is available. That button opens the same dialog.
+The plugin asks GitHub for the latest release once each time a post-game screen starts (8 second timeout; on failure the options row says it couldn't check). When that release is newer, one local row is inserted as the first child of `.messages`. It uses the normal chat-message shape (`better-lol-chat` as the name, then `vX.X is available. Click for details.`), with classes `blc-injected blc-update-note` and a soft gold background. Later messages stay below it, and it scrolls with the list. Clicking the row opens the update dialog. The row is not sent through League chat. `rewriteMessages` skips `.blc-injected`. The options-panel update row shows the status text, and a "What's new" button when an update is available. That button opens the same dialog.
+
+### Remote notice
+
+A second local chat row can appear under the update note (or at the top of `.messages` when there is no update). Classes `blc-injected blc-notice`. Same chat-message shape and name (`better-lol-chat`), without the gold fill or left bar. Body text is dimmer than the update note. The row is not sent through League chat. `rewriteMessages` skips `.blc-injected`. Champion-icon line-height rules also exclude `.blc-injected`.
+
+The plugin fetches a public gist JSON once per post-game screen (8 second timeout; failure or an empty `notices` list shows nothing). URL is `NOTICE_URL` in `notice.js`. The file holds `gamesBetweenNotices`, optional `gamesBetweenPriority`, and a `notices` array. Each notice has `id`, `messages` (string array), optional https `url`, optional inclusive local-date `from` / `until`, and optional `priority`. Array order is ignored.
+
+One channel counter `gamesSince` in `blc-settings.notice` counts games since any notice was shown (one count per post-game conversation id). A line is due when that counter meets the current gap: `gamesBetweenPriority` while any priority notice is eligible, otherwise `gamesBetweenNotices`. Eligible priority notices pause the standard pool and take turns by per-id `gamesSince`. Standard notices share turns the same way when no priority notice is active. Leaving priority mode resets the channel counter so the next game is not immediately a standard line. Clicking a row that has a `url` opens it. There is no dismiss control and no options toggle.
+
+Preview: `window.__blcPreviewNotice()` or `/notice` in the post-game chat input paints the line that would be due if the gap had elapsed, without writing settings.
 
 ### Update dialog
 

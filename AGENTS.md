@@ -17,6 +17,8 @@ If a selector fails after a patch, re-check the live element. Do not invent a ne
 
 This repo is the Pengu plugin. It changes Riot's existing post-game chat screen.
 
+One remote notice line in post-game chat is allowed (gist-backed pitches for the author's other projects). Do not add images, HTML, tracking, extra ad rows, or third-party ads. Do not paywall champion names, team colors, or basic readability.
+
 ## Client constraints
 
 Settings live in the League client's `localStorage` under `blc-settings`. On load, merge saved values over the defaults so a new key does not wipe prior choices. Do not write settings through `context.fs`. Losing them if the user wipes client storage is acceptable.
@@ -29,11 +31,7 @@ The plugin runs inside the League client:
 
 - It cannot raise its own permissions. `context.fs` cannot write outside the plugin folder. Program Files is read-only from that process.
 - Pengu only loads `index.js` from its `plugins` folder. A second writable folder is not a plugin and is not reachable through `context.fs`.
-- Do not self-update from inside the client.
 - The user still turns Pengu on once. A League patch that breaks Pengu is fixed by Pengu's own update.
 
-The client plugin stays useful on its own. Do not paywall champion names, team colors, or basic readability. Do not inject ads into the League client. Macros stay user-initiated: do not auto-send on game end, auto-reply, or schedule chat.
+Macros stay user-initiated: do not auto-send on game end, auto-reply, or schedule chat.
 
-## Screens that are not captured yet
-
-Pre-game chat is not started. Champion mapping comes from the end-of-game stats block, which does not exist in champ select or the lobby. Pre-game needs its own room type, its own player list (picks change during select), and a DOM capture before the same behavior can apply.
