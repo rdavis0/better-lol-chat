@@ -16,7 +16,7 @@ import { beginPostGameUpdateCheck, mountUpdateNotice } from './update.js';
 import { closeUpdateDialog, updateDialogIsOpen } from './update-dialog.js';
 
 const LOG = '[better-lol-chat]';
-const VERSION = '0.8';
+const VERSION = '1.0';
 const CREDIT_TEXT = `better-lol-chat by wryguy`;
 const POSTGAME_PHASES = new Set([
   'WaitingForStats',
