@@ -41,4 +41,4 @@ Chat too quiet? You can inject sample messages (only you will see them) by typin
 
 ## License
 
-[MIT](LICENSE)
+Copyright (c) 2026 wryguy. All rights reserved. See [LICENSE](LICENSE).
