@@ -46,7 +46,6 @@ const frameObservers = new WeakMap();
 
 window.__blcSeedRoster = (entries) => {
   const added = seedRoster(entries);
-  if (added) console.log(LOG, 'seeded', added, 'scoreboard players');
   scheduleEnhance();
   return added;
 };

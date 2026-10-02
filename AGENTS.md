@@ -7,8 +7,7 @@ Implemented behavior is the plugin source plus the docs below.
 ## Read first
 
 - `docs/CHAT_INTERFACE.md` — post-game DOM, selectors, identity, and what this plugin already changes.
-- `docs/CAPTURE.md` — how to capture a live client before changing selectors or adding a new screen.
-- `docs/fixtures/` — trimmed exports named from those docs.
+- `docs/fixtures/` — trimmed exports named from that doc.
 - Plugin source: `pengu-plugin/better-lol-chat/`.
 
 If a selector fails after a patch, re-check the live element. Do not invent a new one.

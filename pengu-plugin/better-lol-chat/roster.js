@@ -151,7 +151,6 @@ export async function refreshIdentities() {
   nextAliases.sort((a, b) => b.name.length - a.name.length);
   nameIndex = nextAliases;
   applySeeds();
-  console.log(LOG, 'mapped', list.length, 'players', { conversation: conversationId });
 }
 
 function collectPlayers(eog, me, champNames, champIcons) {
