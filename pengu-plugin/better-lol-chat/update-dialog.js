@@ -3,8 +3,11 @@ import dialogHtml from './update-dialog.html?raw';
 
 const DIALOG_ID = 'blc-update-dialog';
 const EMPTY_NOTES = 'No release notes were published for this version.';
+const WHATS_NEW = /^(?:#{1,6}\s*)?(?:\*\*|__)?what'?s new(?:\*\*|__)?$/i;
+const CHANGELOG = /(?:\r?\n)*\*{0,2}Full Changelog\*{0,2}\s*:\s*\S+\s*$/i;
 
 let active = null;
+let viewGen = 0;
 
 function ensureDialog() {
   const existing = document.getElementById(DIALOG_ID);
@@ -22,10 +25,45 @@ function setText(root, key, text) {
   if (el) el.textContent = text;
 }
 
+function fillNotes(root, raw) {
+  const heading = root.querySelector('[data-blc-notes="heading"]');
+  const body = root.querySelector('[data-blc-notes="body"]');
+  const text = String(raw || '').trim().replace(CHANGELOG, '').trim() || EMPTY_NOTES;
+  const lines = text.split(/\r?\n/);
+  const isHeading = WHATS_NEW.test(lines[0].trim());
+  if (heading) {
+    heading.hidden = !isHeading;
+    heading.textContent = isHeading ? "What's new" : '';
+  }
+  if (body) body.textContent = (isHeading ? lines.slice(1).join('\n') : text).trim();
+}
+
 function setView(root, view) {
+  root.querySelector('.blc-dialog-actions')?.classList.remove('is-leaving');
   for (const el of root.querySelectorAll('[data-blc-view]')) {
     el.hidden = el.dataset.blcView !== view;
   }
+}
+
+function showInstallStep(root) {
+  const gen = viewGen;
+  const actions = root.querySelector('.blc-dialog-actions');
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (!actions || actions.hidden || reduce) {
+    setView(root, 'done');
+    return;
+  }
+  actions.classList.add('is-leaving');
+  let settled = false;
+  const finish = () => {
+    if (settled || gen !== viewGen) return;
+    settled = true;
+    setView(root, 'done');
+  };
+  actions.addEventListener('transitionend', (event) => {
+    if (event.target === actions && event.propertyName === 'opacity') finish();
+  });
+  window.setTimeout(finish, 240);
 }
 
 export function updateDialogIsOpen() {
@@ -34,6 +72,7 @@ export function updateDialogIsOpen() {
 }
 
 export function closeUpdateDialog() {
+  viewGen += 1;
   const root = document.getElementById(DIALOG_ID);
   if (root) root.hidden = true;
   active = null;
@@ -44,15 +83,26 @@ export function closeUpdateDialog() {
  * An empty downloadUrl is a preview: Download Now still advances to the install step.
  */
 export function showUpdateDialog(options) {
+  viewGen += 1;
   const root = ensureDialog();
   active = options;
   const version = String(options.version || '').replace(/^v/i, '');
   setText(root, 'subtitle', version ? `better-lol-chat v${version} is ready to install.` : 'An update is ready to install.');
-  setText(root, 'notes', String(options.notes || '').trim() || EMPTY_NOTES);
+  fillNotes(root, options.notes);
   setView(root, 'notes');
   root.hidden = false;
-  const scroller = root.querySelector('.blc-dialog-notes');
-  if (scroller) scroller.scrollTop = 0;
+  syncNotesMask(root.querySelector('.blc-dialog-notes'));
+}
+
+// The scrollable defaults to a bottom fade and only updates on scroll. Short notes never scroll,
+// so mark both ends reached when the text fits. Same 1px buffer the component uses.
+function syncNotesMask(scroller) {
+  if (!scroller) return;
+  scroller.scrollTop = 0;
+  const buffer = Number(scroller.getAttribute('buffer')) || 1;
+  const atBottom = scroller.offsetHeight + buffer >= scroller.scrollHeight;
+  scroller.setAttribute('scrolled-top', 'true');
+  scroller.setAttribute('scrolled-bottom', String(atBottom));
 }
 
 function openExternal(url) {
@@ -72,7 +122,7 @@ function onDialogClick(event) {
   if (!current) return;
   if (action === 'download') {
     openExternal(current.downloadUrl);
-    setView(root, 'done');
+    showInstallStep(root);
   } else if (action === 'release') {
     openExternal(current.releaseUrl);
   } else if (action === 'skip') {
@@ -81,13 +131,14 @@ function onDialogClick(event) {
   }
 }
 
-// The frame's close-button markup is not captured yet, so match by class name.
+// The frame itself is classed dismissable-close-button, so any "close" substring matches the whole dialog.
 function clickedCloseButton(event, root) {
   for (const node of event.composedPath()) {
     if (node === root) return false;
+    if (node?.tagName === 'LOL-UIKIT-CLOSE-BUTTON') return true;
     const cls = node?.className;
     const name = typeof cls === 'string' ? cls : cls?.baseVal || '';
-    if (/close/i.test(name)) return true;
+    if (/(?:^|\s)lol-uikit-dialog-frame-(?:toast-)?close-button(?:\s|$)/i.test(name)) return true;
   }
   return false;
 }

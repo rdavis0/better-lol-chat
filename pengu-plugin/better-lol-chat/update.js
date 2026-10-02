@@ -203,13 +203,11 @@ const PREVIEW_NOTES = [
   '',
   '- Update dialog with release notes',
   '- Skip an update to hide its chat notice',
-  '- Arena scoreboard support',
+  '- Faster scoreboard icon placement',
   '- Fixed items overlapping the champion icon on narrow windows',
   '- Fixed sticky chat collapsing after the options panel closed',
   '- Smaller tweaks to the options menu',
   '- Improved spacing in the post-game header',
-  '',
-  'Full Changelog: ' + REPO_URL + '/compare/v0.8...v1.0',
 ].join('\n');
 
 export function previewUpdateDialog() {
