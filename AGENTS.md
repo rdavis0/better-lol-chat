@@ -37,5 +37,3 @@ The client plugin stays useful on its own. Do not paywall champion names, team c
 ## Screens that are not captured yet
 
 Pre-game chat is not started. Champion mapping comes from the end-of-game stats block, which does not exist in champ select or the lobby. Pre-game needs its own room type, its own player list (picks change during select), and a DOM capture before the same behavior can apply.
-
-Arena rows only have `mine`, `my-team`, and `other-team`. Every opponent shares `other-team`, so team id has to come from the end-of-game `teams[]` block. Capture that screen first (`docs/CAPTURE.md`). Each Arena team gets its own name color. Your duo stays the ally color. Mark each team on the Arena scoreboard with that same color. Duplicate champions on that screen stay with this work: keep players mapped by puuid and summoner id.

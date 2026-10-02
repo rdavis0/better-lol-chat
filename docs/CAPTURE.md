@@ -2,7 +2,8 @@
 
 - [x] Connected message list — [`docs/fixtures/messages.html`](fixtures/messages.html) (2026-09-23). Captured with the plugin running, so names are already champions and leave rows already use `.blc-system-name`.
 - [x] Matching LCU messages — [`docs/fixtures/postgame-messages.json`](fixtures/postgame-messages.json)
-- [ ] Arena end-of-game block and scoreboard
+- [x] Client dialog style references — [`docs/fixtures/client-exit-dialog.html`](fixtures/client-exit-dialog.html), [`docs/fixtures/client-privacy-notice.html`](fixtures/client-privacy-notice.html) (patch 16.19)
+- [ ] Update dialog live check: where the client mounts `.dialog-confirm`, and the markup of the frame's close button (run `/dialog` first)
 
 Do this on a post-game screen while the chat session is still connected. An expired frame only shows `.messages.disconnected` and cannot confirm the row markup. `docs/fixtures/postgame-screen.html` is not a substitute: its iframe is empty.
 
@@ -65,28 +66,4 @@ Same screen, same DevTools console. This is the API list for that room, so each 
 
 Save the JSON as `docs/fixtures/postgame-messages.json`.
 
-## 3. Arena, when you play one
-
-The message row only has `mine`, `my-team`, and `other-team`. An Arena dump is what shows whether each duo has its own id.
-
-On the Arena post-game screen, paste:
-
-```javascript
-(async () => {
-  const eog = await fetch('/lol-end-of-game/v1/eog-stats-block').then((r) => r.json());
-  const board = document.querySelector(
-    '.cherry-scoreboard-root-content-container, .scoreboard-root-component, .scoreboard-team-container',
-  );
-  const payload = {
-    eog,
-    scoreboardHtml: board ? board.outerHTML : null,
-  };
-  console.log('[BLC CAPTURE] arena', payload);
-  copy?.(JSON.stringify(payload, null, 2));
-  return payload;
-})();
-```
-
-Save that as `docs/fixtures/arena-eog.json`. If the scoreboard HTML is too large for the clipboard, log `payload.scoreboardHtml` on its own and save it as `docs/fixtures/arena-scoreboard.html`.
-
-Same-champion games (One for All, Arena duplicates, a blind-pick mirror) do not need their own capture unless the Summoner's Rift end-of-game block is missing a second player with the same `championId`.
+Same-champion games (One for All, a blind-pick mirror) do not need their own capture unless the Summoner's Rift end-of-game block is missing a second player with the same `championId`.
