@@ -37,6 +37,36 @@ function nameStyleFrom(showSummoner, showChampion) {
   return 'champion';
 }
 
+function emptyNoticeState() {
+  return {
+    lastGameId: '',
+    gamesSince: 0,
+    priorityActive: false,
+    shown: {},
+  };
+}
+
+function mergeNoticeState(saved) {
+  const next = emptyNoticeState();
+  if (typeof saved.lastGameId === 'string') next.lastGameId = saved.lastGameId;
+  if (Number.isFinite(Number(saved.gamesSince))) {
+    next.gamesSince = Math.max(0, Math.floor(Number(saved.gamesSince)));
+  }
+  if (typeof saved.priorityActive === 'boolean') next.priorityActive = saved.priorityActive;
+  if (saved.shown && typeof saved.shown === 'object') {
+    for (const [id, entry] of Object.entries(saved.shown)) {
+      if (!/^[\w.-]{1,64}$/.test(id) || !entry || typeof entry !== 'object') continue;
+      const gamesSince = Number(entry.gamesSince);
+      const message = Number(entry.message);
+      next.shown[id] = {
+        gamesSince: Number.isFinite(gamesSince) ? Math.max(0, Math.floor(gamesSince)) : 0,
+        message: Number.isFinite(message) ? Math.max(0, Math.floor(message)) : 0,
+      };
+    }
+  }
+  return next;
+}
+
 function loadSettings() {
   const next = {
     tallerChat: true,
@@ -47,11 +77,17 @@ function loadSettings() {
     strongDim: true,
     autoOpen: true,
     stickyChat: true,
+    skippedUpdate: '',
+    notice: emptyNoticeState(),
     colors: { ...COLOR_DEFAULTS },
   };
   try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
     if (!saved || typeof saved !== 'object') return next;
+    if (typeof saved.skippedUpdate === 'string') next.skippedUpdate = saved.skippedUpdate;
+    if (saved.notice && typeof saved.notice === 'object') {
+      next.notice = mergeNoticeState(saved.notice);
+    }
     for (const key of TOGGLE_KEYS) {
       if (typeof saved[key] === 'boolean') next[key] = saved[key];
     }

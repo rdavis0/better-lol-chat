@@ -41,12 +41,12 @@
 
 /* Client rows are a 16px line with the name bottom-aligned. A 1.75em icon
    would sit high of the colon, so open the line to the icon and center it.
-   The update note has no icon, so it keeps the client line. */
-.blc-chat-icons .message-box:not(.blc-update-note) {
+   Injected rows have no icon, so they keep the client line. */
+.blc-chat-icons .message-box:not(.blc-injected) {
   line-height: 1.75em;
 }
 
-.blc-chat-icons .message-box:not(.blc-update-note) .message-name,
+.blc-chat-icons .message-box:not(.blc-injected) .message-name,
 .blc-chat-icons .blc-leave-label {
   align-items: center;
   vertical-align: bottom;
@@ -105,6 +105,16 @@
 .message-box.blc-update-note .message,
 .blc-tint-bodies .message-box.blc-update-note .message {
   color: #f7f0dc !important;
+}
+
+.message-box.blc-notice .message-name {
+  color: var(--blc-credit, #ffd700) !important;
+  font-weight: 700;
+}
+
+.message-box.blc-notice .message,
+.blc-tint-bodies .message-box.blc-notice .message {
+  color: #c5c0b4 !important;
 }
 
 .blc-credit {

@@ -10,12 +10,14 @@ import {
   syncOptionsScrollbar,
 } from './options.js';
 import { refreshIdentities, clearRoster, players, seedRoster } from './roster.js';
-import { rewriteMessages, matchAlias, stripBidi, isJoinNotice } from './messages.js';
+import { rewriteMessages, matchAlias, stripBidi } from './messages.js';
 import { installSampleCommands } from './sample.js';
 import { beginPostGameUpdateCheck, mountUpdateNotice } from './update.js';
+import { beginPostGameNoticeCheck, mountNotice, onNoticeIdentitiesReady, clearNoticeMount } from './notice.js';
+import { closeUpdateDialog, updateDialogIsOpen } from './update-dialog.js';
 
 const LOG = '[better-lol-chat]';
-const VERSION = '0.8';
+const VERSION = '1.0';
 const CREDIT_TEXT = `better-lol-chat by wryguy`;
 const POSTGAME_PHASES = new Set([
   'WaitingForStats',
@@ -44,7 +46,6 @@ const frameObservers = new WeakMap();
 
 window.__blcSeedRoster = (entries) => {
   const added = seedRoster(entries);
-  if (added) console.log(LOG, 'seeded', added, 'scoreboard players');
   scheduleEnhance();
   return added;
 };
@@ -99,7 +100,7 @@ export function load() {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['class', 'room-changed-messages'],
+    attributeFilter: ['class'],
   });
 
   installSampleCommands({
@@ -148,6 +149,7 @@ export function load() {
 function onPhase(phase) {
   const next = POSTGAME_PHASES.has(String(phase || ''));
   if (next === inPostGame && next) return;
+  const leavingPostGame = inPostGame && !next;
   inPostGame = next;
   if (!inPostGame) {
     windowCollapsed = false;
@@ -164,12 +166,16 @@ function onPhase(phase) {
     focusWatchBox = null;
     clearScoreboardIcons();
     closeOptions();
+    clearNoticeMount();
+    if (leavingPostGame) closeUpdateDialog();
     return;
   }
   beginPostGameUpdateCheck(VERSION);
+  beginPostGameNoticeCheck();
   windowCollapsed = false;
   refreshIdentities()
     .then(() => {
+      onNoticeIdentitiesReady();
       scheduleEnhance();
       ensureOpen();
       setTimeout(ensureOpen, 300);
@@ -907,7 +913,7 @@ function onInputOpen(event) {
 }
 
 function onHostPointerDown(event) {
-  if (event.target?.closest?.('#blc-options')) return;
+  if (event.target?.closest?.('#blc-options, #blc-update-dialog')) return;
   const menuWasOpen = optionsAreOpen();
   closeOptions();
   if (settings.stickyChat || !inPostGame || windowCollapsed) return;
@@ -983,6 +989,12 @@ function chatWindowIsFocused(room = findPostGameRoom()) {
 function onEscape(event) {
   if (event.key !== 'Escape') return;
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (updateDialogIsOpen()) {
+    event.preventDefault();
+    event.stopPropagation();
+    closeUpdateDialog();
+    return;
+  }
   if (optionsAreOpen()) {
     closeOptions();
     return;
@@ -1019,7 +1031,6 @@ function enhance() {
     if (!room) return;
     chatRoom = room;
     ensurePlayerMessagesVisible(room);
-    stripRoomChangedJoinNoise(room);
     hookMessageFrame(room);
     const doc = getFrameDocument(room);
     if (doc) {
@@ -1027,26 +1038,12 @@ function enhance() {
       insertCredit(doc);
       rewriteMessages(doc);
       mountUpdateNotice(doc);
+      mountNotice(doc);
     }
   } catch (err) {
     console.warn(LOG, err);
   } finally {
     applying = false;
-  }
-}
-
-function stripRoomChangedJoinNoise(room) {
-  const raw = room.getAttribute('room-changed-messages');
-  if (!raw) return;
-  try {
-    const arr = JSON.parse(raw);
-    if (!Array.isArray(arr)) return;
-    const filtered = arr.filter((s) => !isJoinNotice(String(s)));
-    if (filtered.length !== arr.length) {
-      room.setAttribute('room-changed-messages', JSON.stringify(filtered));
-    }
-  } catch {
-    /* ignore */
   }
 }
 

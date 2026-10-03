@@ -1,6 +1,6 @@
 .blc-options {
   position: fixed;
-  z-index: 100000;
+  z-index: 10;
   width: min(300px, calc(100vw - 12px));
   display: flex;
   flex-direction: column;
@@ -45,7 +45,7 @@
 
 .blc-bug-tip {
   position: fixed;
-  z-index: 100001;
+  z-index: 11;
   width: max-content;
   margin: 0;
   pointer-events: none;

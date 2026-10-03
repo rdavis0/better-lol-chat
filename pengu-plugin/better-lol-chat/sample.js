@@ -2,7 +2,12 @@
  * Dev sample for the post-game messages iframe.
  * Console: window.__blcInjectSampleMessages()
  * Chat: /sample or /demo, then Enter. The line is not sent.
+ * Chat: /dialog shows the update dialog with sample release notes.
+ * Chat: /notice shows the remote notice that would be due (ignores the game gap).
  */
+
+import { previewUpdateDialog } from './update.js';
+import { previewNotice } from './notice.js';
 
 const SAMPLE = 'blc-sample';
 const CELEBRATION =
@@ -83,13 +88,13 @@ export async function injectSampleMessages() {
   const seeded = seedRoster(players);
 
   const inserted = [];
-  for (const team of ['mine', 'my-team', 'other-team']) {
-    for (const player of players[team]) {
-      if (!player.summoner) continue;
-      const row = makeSystem(doc, team, `${player.summoner} joined the lobby`);
-      parent.appendChild(row);
-      inserted.push(row);
-    }
+  const sample = ['mine', 'my-team', 'other-team']
+    .flatMap((team) => players[team].map((player) => ({ team, player })))
+    .find((entry) => entry.player.summoner);
+  if (sample) {
+    const row = makeSystem(doc, sample.team, `${sample.player.summoner} joined the lobby`);
+    parent.appendChild(row);
+    inserted.push(row);
   }
 
   const skipped = { mine: 0, 'my-team': 0, 'other-team': 0 };
@@ -104,10 +109,8 @@ export async function injectSampleMessages() {
     inserted.push(row);
   }
 
-  for (const team of ['my-team', 'other-team']) {
-    const player = players[team].find((entry) => entry.summoner);
-    if (!player) continue;
-    const row = makeSystem(doc, team, `${player.summoner} left the lobby`);
+  if (sample) {
+    const row = makeSystem(doc, sample.team, `${sample.player.summoner} left the lobby`);
     parent.appendChild(row);
     inserted.push(row);
   }
@@ -290,7 +293,12 @@ function scrollParent(el) {
   return el.ownerDocument.scrollingElement || el.ownerDocument.body;
 }
 
-const CHAT_COMMANDS = new Set(['/sample', '/demo']);
+const CHAT_COMMANDS = new Map([
+  ['/sample', injectSampleMessages],
+  ['/demo', injectSampleMessages],
+  ['/dialog', previewUpdateDialog],
+  ['/notice', previewNotice],
+]);
 let swallowSampleEnter = false;
 
 window.__blcInjectSampleMessages = injectSampleMessages;
@@ -312,7 +320,8 @@ function runSampleCommand(event, room) {
   if (event.shiftKey || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
   const field = event.target?.closest?.('textarea.chat-input, textarea');
   if (!room || !field || !room.contains(field)) return;
-  if (!CHAT_COMMANDS.has(field.value.trim().toLowerCase())) return;
+  const command = CHAT_COMMANDS.get(field.value.trim().toLowerCase());
+  if (!command) return;
 
   event.preventDefault();
   event.stopPropagation();
@@ -324,7 +333,7 @@ function runSampleCommand(event, room) {
   if (sizer) sizer.textContent = '';
   field.dispatchEvent(new Event('input', { bubbles: true }));
 
-  injectSampleMessages();
+  command();
 }
 
 function onSampleCommandKeyUp(event) {
