@@ -16,7 +16,7 @@ If a selector fails after a patch, re-check the live element. Do not invent a ne
 
 This repo is the Pengu plugin. It changes Riot's existing post-game chat screen.
 
-One remote notice line in post-game chat is allowed (gist-backed pitches for the author's other projects). Do not add images, HTML, tracking, extra ad rows, or third-party ads. Do not paywall champion names, team colors, or basic readability.
+One remote notice line in post-game chat is allowed (gist-backed pitches for the author's other projects). 
 
 ## Client constraints
 
@@ -33,4 +33,3 @@ The plugin runs inside the League client:
 - The user still turns Pengu on once. A League patch that breaks Pengu is fixed by Pengu's own update.
 
 Macros stay user-initiated: do not auto-send on game end, auto-reply, or schedule chat.
-
