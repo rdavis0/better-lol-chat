@@ -1,4 +1,4 @@
-"""Build the release install.bat with this release's zip address filled in."""
+"""Build the release installer with this release's zip address filled in."""
 
 import pathlib
 import sys

@@ -105,7 +105,7 @@ if ($ZipUrl -notmatch '^https://github\.com/rdavis0/better-lol-chat/releases/dow
 }
 
 if (-not $env:BLC_BAT) {
-  Write-Host 'Run install.bat to install better-lol-chat.'
+  Write-Host 'Run this file to install better-lol-chat.'
   Wait-Close 1
 }
 
@@ -157,7 +157,7 @@ try {
   robocopy $source $dest /MIR /R:2 /W:1 /NFL /NDL /NJH /NJS /NP
   $copyCode = $LASTEXITCODE
   if ($copyCode -ge 8) {
-    Write-Host "Copy failed. Close League and run install.bat again."
+    Write-Host "Copy failed. Close League and run this file again."
     Wait-Close 1
   }
 } finally {

@@ -4,6 +4,8 @@ import { showUpdateDialog } from './update-dialog.js';
 const REPO_URL = 'https://github.com/rdavis0/better-lol-chat';
 const RELEASES_URL = 'https://api.github.com/repos/rdavis0/better-lol-chat/releases/latest';
 const SAFE_TAG = /^[\w.+-]+$/;
+const DOWNLOAD_PREFIX = `${REPO_URL}/releases/download/`;
+const INSTALLER_NAME = /^blc-install-\d+(?:\.\d+){0,3}\.bat$/i;
 const STYLE_ID = 'blc-update-style';
 
 const STYLE = `
@@ -173,11 +175,14 @@ function describeRelease(version, release) {
   const current = normalizeVersion(version);
   const order = current ? compareVersions(latest, current) : 1;
   if (order > 0) {
+    const installer = installerAsset(release);
     return {
       status: `Update available: v${latest}`,
       latest,
       tag,
       notes: typeof release.body === 'string' ? release.body : '',
+      downloadUrl: installer?.url || '',
+      installerName: installer?.name || '',
     };
   }
   if (order < 0) {
@@ -186,13 +191,26 @@ function describeRelease(version, release) {
   return { status: 'Up to date' };
 }
 
+function installerAsset(release) {
+  const bats = (Array.isArray(release?.assets) ? release.assets : []).filter((asset) => {
+    const name = String(asset?.name || '');
+    const url = String(asset?.browser_download_url || '');
+    return name.toLowerCase().endsWith('.bat') && url.startsWith(DOWNLOAD_PREFIX);
+  });
+  const named = bats.filter((asset) => INSTALLER_NAME.test(String(asset.name)));
+  const chosen = named.length === 1 ? named[0] : bats.length === 1 ? bats[0] : null;
+  if (!chosen) return null;
+  return { name: String(chosen.name), url: String(chosen.browser_download_url) };
+}
+
 function openUpdateFor(info) {
   if (!info?.latest) return;
   const tag = encodeURIComponent(info.tag);
   showUpdateDialog({
     version: info.latest,
     notes: info.notes,
-    downloadUrl: `${REPO_URL}/releases/download/${tag}/install.bat`,
+    downloadUrl: info.downloadUrl || '',
+    installerName: info.installerName || '',
     releaseUrl: `${REPO_URL}/releases/tag/${tag}`,
     onSkip: () => skipUpdate(info),
   });
@@ -215,6 +233,7 @@ export function previewUpdateDialog() {
     version: '9.9',
     notes: PREVIEW_NOTES,
     downloadUrl: '',
+    installerName: 'blc-install-9.9.bat',
     releaseUrl: `${REPO_URL}/releases`,
   });
 }

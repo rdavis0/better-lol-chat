@@ -20,7 +20,7 @@ Unofficial Pengu Loader plugin that improves League of Legends **post-game chat*
 **Required dependency:** Install [Pengu Loader](https://pengu.lol/) and turn it on once.
 
 ### Via Installer
-Download [install.bat](https://github.com/rdavis0/better-lol-chat/releases/latest/download/install.bat) and run it. Restart League when it finishes (Ctrl + R in the client).
+Download [blc-install-1.0.bat](https://github.com/rdavis0/better-lol-chat/releases/download/v1.0/blc-install-1.0.bat) and run it. Restart League when it finishes (Ctrl + R in the client).
 
 ### Or extract it yourself
 1. Download [better-lol-chat.zip](https://github.com/rdavis0/better-lol-chat/releases/latest/download/better-lol-chat.zip).

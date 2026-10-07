@@ -79,8 +79,9 @@ export function closeUpdateDialog() {
 }
 
 /**
- * options: { version, notes, downloadUrl, releaseUrl, onSkip }
- * An empty downloadUrl is a preview: Download Now still advances to the install step.
+ * options: { version, notes, downloadUrl, installerName, releaseUrl, onSkip }
+ * An empty downloadUrl with an installerName is a preview: Download Now still advances
+ * to the install step and does not open a URL.
  */
 export function showUpdateDialog(options) {
   viewGen += 1;
@@ -88,6 +89,7 @@ export function showUpdateDialog(options) {
   active = options;
   const version = String(options.version || '').replace(/^v/i, '');
   setText(root, 'subtitle', version ? `better-lol-chat v${version} is ready to install.` : 'An update is ready to install.');
+  setText(root, 'installer', options.installerName || 'the installer');
   fillNotes(root, options.notes);
   setView(root, 'notes');
   root.hidden = false;
@@ -121,8 +123,14 @@ function onDialogClick(event) {
   const current = active;
   if (!current) return;
   if (action === 'download') {
-    openExternal(current.downloadUrl);
-    showInstallStep(root);
+    if (current.downloadUrl) {
+      openExternal(current.downloadUrl);
+      showInstallStep(root);
+    } else if (current.installerName) {
+      showInstallStep(root);
+    } else {
+      openExternal(current.releaseUrl);
+    }
   } else if (action === 'release') {
     openExternal(current.releaseUrl);
   } else if (action === 'skip') {
