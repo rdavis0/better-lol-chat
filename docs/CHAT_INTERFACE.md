@@ -112,7 +112,7 @@ Typing `/sample` or `/demo` in the post-game `textarea.chat-input` and pressing 
 ### Chat line
 
 - `.message-name` is one node. Before this plugin rewrites it, the text is the Riot ID. The plugin replaces that text only when it matches a mapped alias (`Name#TAG` or the game name before `#`). A champion name already in `.message-name` is left as-is. Team color still comes from the row class.
-- With champion icons on, `.message-name` starts with `<img class="blc-champ-icon" alt="">`. The `src` is the roster portrait (`squarePortraitPath`, or `/lol-game-data/assets/v1/champion-icons/{id}.png`). Leave rows wrap that image and the name in `.blc-leave-label`, then the verb (` left the lobby`) stays a text node so the line can wrap. The icon is `1.75em` square. The iframe root gets `blc-chat-icons`, which sets the row line-height to `1.75em` and centers the name on the icon so it stays level with the colon and body.
+- With champion icons on, `.message-name` starts with `<img class="blc-champ-icon" alt="">`. The `src` is the roster portrait (`squarePortraitPath`, or `/lol-game-data/assets/v1/champion-icons/{id}.png`). Leave rows wrap that image and the name in `.blc-leave-label`, then the verb ( `left the lobby`) stays a text node so the line can wrap. The icon is `1.75em` square. The iframe root gets `blc-chat-icons`, which sets the row line-height to `1.75em` and centers the name on the icon so it stays level with the colon and body.
 - The colon is its own `<span class="message">:</span>`. The text is `:`, with no spaces inside the span. The body is a second `<span class="message">` whose text is the LCU `body`.
 - The client template leaves whitespace between those three nodes. Collapsed, that is one space before the colon and one space after it. Sample rows need those space text nodes. Without them the colon sits against the name.
 
@@ -171,9 +171,65 @@ The plugin asks GitHub for the latest release once each time a post-game screen 
 
 A second local chat row can appear under the update note (or at the top of `.messages` when there is no update). Classes `blc-injected blc-notice`. Same chat-message shape and name (`better-lol-chat`), without the gold fill or left bar. Body text is dimmer than the update note. The row is not sent through League chat. `rewriteMessages` skips `.blc-injected`. Champion-icon line-height rules also exclude `.blc-injected`.
 
-The plugin fetches a public gist JSON once per post-game screen (8 second timeout; failure or an empty `notices` list shows nothing). URL is `NOTICE_URL` in `notice.js`. The file holds `gamesBetweenNotices`, optional `gamesBetweenPriority`, and a `notices` array. Each notice has `id`, `messages` (string array), optional https `url`, optional inclusive local-date `from` / `until`, and optional `priority`. Array order is ignored.
+The plugin fetches a public gist JSON once per post-game screen (8 second timeout; failure or an empty `notices` list shows nothing). URL is `NOTICE_URL` in `notice.js`. The gist is live config, not a demo file: keep `"notices": []` until a real pitch should ship. Unknown fields are ignored. Array order is ignored.
 
-One channel counter `gamesSince` in `blc-settings.notice` counts games since any notice was shown (one count per post-game conversation id). A line is due when that counter meets the current gap: `gamesBetweenPriority` while any priority notice is eligible, otherwise `gamesBetweenNotices`. Eligible priority notices pause the standard pool and take turns by per-id `gamesSince`. Standard notices share turns the same way when no priority notice is active. Leaving priority mode resets the channel counter so the next game is not immediately a standard line. Clicking a row that has a `url` opens it. There is no dismiss control and no options toggle.
+Root fields:
+
+
+| Field                  | Required | Default                       | Meaning                                                         |
+| ---------------------- | -------- | ----------------------------- | --------------------------------------------------------------- |
+| `gamesBetweenNotices`  | no       | `5`                           | Games between any standard notice. Values below `1` become `1`. |
+| `gamesBetweenPriority` | no       | same as `gamesBetweenNotices` | Games between notices while any priority notice is eligible.    |
+| `notices`              | yes      | —                             | Array of notice objects. `[]` is the kill switch.               |
+
+
+Each notice:
+
+
+| Field            | Required | Meaning                                                                                                                                      |
+| ---------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | yes      | `[\w.-]+`, up to 64 characters. Stable identity for turn-taking and message cycling.                                                         |
+| `messages`       | yes      | Non-empty string array. Each show uses the next entry, then wraps. Each string is trimmed and capped at 120 characters.                      |
+| `url`            | no       | `https://` only. When set, the row is clickable and opens with `window.open`.                                                                |
+| `from` / `until` | no       | `YYYY-MM-DD`, inclusive on the player's local calendar. Either may be omitted. Outside the window the notice is ineligible.                  |
+| `priority`       | no       | `true` pauses standard notices while this notice is eligible. Priority notices share `gamesBetweenPriority` and take turns among themselves. |
+
+
+One channel counter `gamesSince` in `blc-settings.notice` counts games since any notice was shown (one count per post-game conversation id). A line is due when that counter meets the current gap: `gamesBetweenPriority` while any priority notice is eligible, otherwise `gamesBetweenNotices`. Eligible notices in the active pool take turns by per-id `gamesSince` (longest wait wins; ties use `id` ascending; never-shown wins). Leaving priority mode resets the channel counter so the next game is not immediately a standard line. There is no dismiss control and no options toggle.
+
+Example gist body:
+
+```json
+{
+  "gamesBetweenNotices": 5,
+  "gamesBetweenPriority": 1,
+  "notices": [
+    {
+      "id": "launch",
+      "priority": true,
+      "from": "2026-10-07",
+      "until": "2026-10-14",
+      "url": "https://blc.lol",
+      "messages": ["Better League Chat desktop is out now!"]
+    },
+    {
+      "id": "jokes",
+      "messages": [
+        "Lee Sin walks into a bar. And a table. And a chair.",
+        "Why did Twisted Fate get deported? He doesn't have a green card.",
+        "Why do chefs love cooking for Ekko? He always goes back four seconds.",
+        "Why are garbagemen so good at League? They're used to carrying trash.",
+        "Why does Taliyah travel well? She's a sand witch.",
+      ]
+    },
+    {
+      "id": "statcheck",
+      "url": "https://statcheck.lol",
+      "messages": ["Theorycraft at statcheck.lol"]
+    }
+  ]
+}
+```
 
 Preview: `window.__blcPreviewNotice()` or `/notice` in the post-game chat input paints the line that would be due if the gap had elapsed, without writing settings.
 
@@ -189,6 +245,8 @@ Plain HTML in `update-dialog.html`, filled in by `update-dialog.js`, styled by `
 - `z-index: 12` is set on purpose: `#blc-options` is `10` and `.blc-bug-tip` is `11`, and the dialog can be opened from the panel.
 - The X is `lol-uikit-close-button`, or the frame's `lol-uikit-dialog-frame-close-button` / `toast-close-button` element, on the click path. The frame itself is classed `dismissable-close-button`, so a match on any class containing `close` closes the dialog on every click inside it. Re-check this live.
 - Preview: `window.__blcPreviewUpdateDialog()` from the client console works on any screen. `/dialog` does the same from the post-game chat input. It uses sample notes. Download Now does not open anything in preview and Skip does nothing.
+
+
 
 ## Identity
 

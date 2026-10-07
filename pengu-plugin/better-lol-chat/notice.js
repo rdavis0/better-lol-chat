@@ -2,7 +2,7 @@ import { settings, saveSettings } from './settings.js';
 import { postGameConversationId } from './roster.js';
 
 const NOTICE_URL =
-  'https://gist.githubusercontent.com/rdavis0/6d724166365242ce3065def8ada6864f/raw/notice.json';
+  'https://gist.github.com/rdavis0/9497829e2a22303e26fcad09950bcd93/raw/notice.json';
 const SAFE_ID = /^[\w.-]{1,64}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_MESSAGE = 120;
