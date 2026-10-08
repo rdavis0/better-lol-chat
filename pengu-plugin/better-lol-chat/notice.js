@@ -1,5 +1,4 @@
 import { settings, saveSettings } from './settings.js';
-import { postGameConversationId } from './roster.js';
 
 const NOTICE_URL =
   'https://gist.githubusercontent.com/rdavis0/9497829e2a22303e26fcad09950bcd93/raw/notice.json';
@@ -16,10 +15,9 @@ const PREVIEW = {
 let checkGen = 0;
 let cached = null;
 let pick = null;
-let pickGameKey = '';
+let pickResolved = false;
+let counted = false;
 let noticeDoc = null;
-let phaseGameKey = '';
-let gameReady = false;
 
 function noticeState() {
   if (!settings.notice || typeof settings.notice !== 'object') {
@@ -30,7 +28,6 @@ function noticeState() {
 
 function emptyNoticeState() {
   return {
-    lastGameId: '',
     gamesSince: 0,
     priorityActive: false,
     shown: {},
@@ -41,9 +38,8 @@ export function beginPostGameNoticeCheck() {
   const gen = ++checkGen;
   cached = null;
   pick = null;
-  pickGameKey = '';
-  phaseGameKey = `phase-${gen}`;
-  gameReady = false;
+  pickResolved = false;
+  counted = false;
   fetchConfig()
     .then((config) => {
       if (gen !== checkGen) return;
@@ -57,15 +53,10 @@ export function beginPostGameNoticeCheck() {
     });
 }
 
-export function onNoticeIdentitiesReady() {
-  gameReady = true;
-  paintNotice();
-}
-
 export function clearNoticeMount() {
   noticeDoc = null;
   pick = null;
-  pickGameKey = '';
+  pickResolved = false;
 }
 
 export function mountNotice(doc) {
@@ -172,16 +163,10 @@ function paintNotice() {
 }
 
 function resolvePick(config) {
-  if (!gameReady && !postGameConversationId()) return null;
-  const gameKey = currentGameKey();
-  if (pickGameKey === gameKey) return pick;
-  pickGameKey = gameKey;
+  if (pickResolved) return pick;
+  pickResolved = true;
   pick = chooseNotice(config, false);
   return pick;
-}
-
-function currentGameKey() {
-  return postGameConversationId() || phaseGameKey || 'phase-unknown';
 }
 
 function chooseNotice(config, preview) {
@@ -194,7 +179,7 @@ function chooseNotice(config, preview) {
   const gap = priorityMode ? config.priorityGap : config.gap;
 
   if (!preview) {
-    advanceGame(state, currentGameKey(), priorityMode, config.notices);
+    advanceGame(state, priorityMode, config.notices);
   }
 
   pruneShown(state, config.notices);
@@ -231,8 +216,9 @@ function chooseNotice(config, preview) {
   return { id: chosen.id, text, url: chosen.url };
 }
 
-function advanceGame(state, gameKey, priorityMode, notices) {
-  if (state.lastGameId === gameKey) return;
+function advanceGame(state, priorityMode, notices) {
+  if (counted) return;
+  counted = true;
 
   if (state.priorityActive && !priorityMode) {
     state.gamesSince = 0;
@@ -250,7 +236,6 @@ function advanceGame(state, gameKey, priorityMode, notices) {
     entry.gamesSince = Math.max(0, Number(entry.gamesSince) || 0) + 1;
   }
 
-  state.lastGameId = gameKey;
   state.priorityActive = priorityMode;
 }
 
@@ -366,11 +351,11 @@ function fillNotice(box, info) {
   if (info.url) {
     box.dataset.blcUrl = info.url;
     box.setAttribute('role', 'link');
-    box.style.cursor = 'pointer';
+    box.classList.add('blc-notice-link');
   } else {
     delete box.dataset.blcUrl;
     box.removeAttribute('role');
-    box.style.cursor = '';
+    box.classList.remove('blc-notice-link');
   }
 }
 

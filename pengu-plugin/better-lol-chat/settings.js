@@ -39,7 +39,6 @@ function nameStyleFrom(showSummoner, showChampion) {
 
 function emptyNoticeState() {
   return {
-    lastGameId: '',
     gamesSince: 0,
     priorityActive: false,
     shown: {},
@@ -48,7 +47,6 @@ function emptyNoticeState() {
 
 function mergeNoticeState(saved) {
   const next = emptyNoticeState();
-  if (typeof saved.lastGameId === 'string') next.lastGameId = saved.lastGameId;
   if (Number.isFinite(Number(saved.gamesSince))) {
     next.gamesSince = Math.max(0, Math.floor(Number(saved.gamesSince)));
   }

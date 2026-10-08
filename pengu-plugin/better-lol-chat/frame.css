@@ -117,6 +117,22 @@
   color: #c5c0b4 !important;
 }
 
+.message-box.blc-notice.blc-notice-link {
+  cursor: pointer;
+}
+
+.message-box.blc-notice.blc-notice-link .blc-notice-body,
+.blc-tint-bodies .message-box.blc-notice.blc-notice-link .blc-notice-body {
+  color: #16cae5 !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.message-box.blc-notice.blc-notice-link:hover .blc-notice-body,
+.blc-tint-bodies .message-box.blc-notice.blc-notice-link:hover .blc-notice-body {
+  color: #7ee5f1 !important;
+}
+
 .blc-credit {
   position: fixed !important;
   top: 0 !important;

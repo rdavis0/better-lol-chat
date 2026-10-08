@@ -13,7 +13,7 @@ import { refreshIdentities, clearRoster, players, seedRoster } from './roster.js
 import { rewriteMessages, matchAlias, stripBidi } from './messages.js';
 import { installSampleCommands } from './sample.js';
 import { beginPostGameUpdateCheck, mountUpdateNotice } from './update.js';
-import { beginPostGameNoticeCheck, mountNotice, onNoticeIdentitiesReady, clearNoticeMount } from './notice.js';
+import { beginPostGameNoticeCheck, mountNotice, clearNoticeMount } from './notice.js';
 import { closeUpdateDialog, updateDialogIsOpen } from './update-dialog.js';
 
 const LOG = '[better-lol-chat]';
@@ -175,7 +175,6 @@ function onPhase(phase) {
   windowCollapsed = false;
   refreshIdentities()
     .then(() => {
-      onNoticeIdentitiesReady();
       scheduleEnhance();
       ensureOpen();
       setTimeout(ensureOpen, 300);

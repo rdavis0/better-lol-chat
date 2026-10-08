@@ -15,10 +15,6 @@ export function aliases() {
   return nameIndex;
 }
 
-export function postGameConversationId() {
-  return conversationId;
-}
-
 export function clearRoster() {
   byPuuid.clear();
   bySummonerId.clear();

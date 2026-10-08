@@ -169,7 +169,7 @@ The plugin asks GitHub for the latest release once each time a post-game screen 
 
 ### Remote notice
 
-A second local chat row can appear under the update note (or at the top of `.messages` when there is no update). Classes `blc-injected blc-notice`. Same chat-message shape and name (`better-lol-chat`), without the gold fill or left bar. Body text is dimmer than the update note. The row is not sent through League chat. `rewriteMessages` skips `.blc-injected`. Champion-icon line-height rules also exclude `.blc-injected`.
+A second local chat row can appear under the update note (or at the top of `.messages` when there is no update). Classes `blc-injected blc-notice`. Same chat-message shape and name (`better-lol-chat`), without the gold fill or left bar. Body text is dimmer than the update note. When the notice has a `url`, the row also gets `blc-notice-link`: the body is underlined in `#16cae5` and the row is clickable. Hover lightens the body to `#7ee5f1`. That color is fixed so a custom ally name color does not change it. The row is not sent through League chat. `rewriteMessages` skips `.blc-injected`. Champion-icon line-height rules also exclude `.blc-injected`.
 
 The plugin fetches a public gist JSON once per post-game screen (8 second timeout; failure or an empty `notices` list shows nothing). URL is `NOTICE_URL` in `notice.js`. The gist is live config, not a demo file: keep `"notices": []` until a real pitch should ship. Unknown fields are ignored. Array order is ignored.
 
@@ -195,7 +195,7 @@ Each notice:
 | `priority`       | no       | `true` pauses standard notices while this notice is eligible. Priority notices share `gamesBetweenPriority` and take turns among themselves. |
 
 
-One channel counter `gamesSince` in `blc-settings.notice` counts games since any notice was shown (one count per post-game conversation id). A line is due when that counter meets the current gap: `gamesBetweenPriority` while any priority notice is eligible, otherwise `gamesBetweenNotices`. Eligible notices in the active pool take turns by per-id `gamesSince` (longest wait wins; ties use `id` ascending; never-shown wins). Leaving priority mode resets the channel counter so the next game is not immediately a standard line. There is no dismiss control and no options toggle.
+One channel counter `gamesSince` in `blc-settings.notice` counts games since any notice was shown (one count each time post-game starts, including a client reload). A line is due when that counter meets the current gap: `gamesBetweenPriority` while any priority notice is eligible, otherwise `gamesBetweenNotices`. Eligible notices in the active pool take turns by per-id `gamesSince` (longest wait wins; ties use `id` ascending; never-shown wins). Leaving priority mode resets the channel counter so the next game is not immediately a standard line. There is no dismiss control and no options toggle.
 
 Example gist body:
 
