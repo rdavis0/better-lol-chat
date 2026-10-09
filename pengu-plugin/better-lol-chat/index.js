@@ -1026,6 +1026,7 @@ function enhance() {
   if (!inPostGame || applying) return;
   applying = true;
   try {
+    annotateHonorTooltip();
     const room = findPostGameRoom();
     if (!room) return;
     chatRoom = room;
@@ -1043,6 +1044,49 @@ function enhance() {
     console.warn(LOG, err);
   } finally {
     applying = false;
+  }
+}
+
+function plainText(value) {
+  return stripBidi(value).replace(/\s+/g, ' ').trim();
+}
+
+// Honor pips hover a name-only system tooltip. The same player-name span is on
+// scoreboard rows; those stay outside #lol-uikit-tooltip-root.
+function annotateHonorTooltip() {
+  const root = document.getElementById('lol-uikit-tooltip-root');
+  if (!root) return;
+  const blocks = root.querySelectorAll('lol-uikit-content-block[type="tooltip-system"]');
+  for (const block of blocks) {
+    const names = block.querySelectorAll('p .player-name__game-name');
+    if (names.length !== 1) continue;
+    const nameEl = names[0];
+    const gameName = plainText(nameEl.textContent);
+    if (!gameName) continue;
+    const note = nameEl.nextElementSibling?.classList?.contains('blc-honor-champ')
+      ? nameEl.nextElementSibling
+      : null;
+    let extra = plainText(block.textContent);
+    const noteText = note ? plainText(note.textContent) : '';
+    if (noteText && extra.endsWith(noteText)) extra = plainText(extra.slice(0, -noteText.length));
+    if (extra !== gameName) {
+      note?.remove();
+      continue;
+    }
+    const champ = matchAlias(gameName)?.player?.championName;
+    if (!champ || champ === 'Unknown') {
+      note?.remove();
+      continue;
+    }
+    const label = ` (${champ})`;
+    if (note) {
+      if (note.textContent !== label) note.textContent = label;
+      continue;
+    }
+    const span = nameEl.ownerDocument.createElement('span');
+    span.className = 'blc-honor-champ';
+    span.textContent = label;
+    nameEl.after(span);
   }
 }
 

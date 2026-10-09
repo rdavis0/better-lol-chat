@@ -294,6 +294,10 @@ The player details, player controls, and actions containers stay at the width th
 
 The badge is removed, and those widths are restored, while chat is collapsed (`blc-collapsed`, or `focused-chat-box` absent) and while the toggle is off. Not-in-chat rows fade the icon to 0.5. The level stays full color. Strong dim grayscales the icon only.
 
+## Honor tooltip
+
+Hovering an honor pip opens a name-only system tooltip in `#lol-uikit-tooltip-root` (confirmed 16.20). The grantor is `.player-name__game-name` inside `lol-uikit-content-block[type="tooltip-system"]` `p`. The plugin inserts `.blc-honor-champ` immediately after that span, ` (Champion)`, when the tooltip text is only that game name and the roster has a champion. Scoreboard `.player-name__game-name` nodes are outside this root and are left alone.
+
 ## Plugin entry
 
 Pengu calls `init(context)` then `load()`. `context.socket.observe(api, listener)` delivers `{ data, uri, eventType }`. Inside the client, `fetch('/lol-...')` needs no basic auth.
